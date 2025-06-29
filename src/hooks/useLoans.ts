@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { LoanRequest } from '../types'
 import { useStore } from '../store/useStore'
+import { useAuth } from './useAuth'
 
 export function useLoans() {
   const [loading, setLoading] = useState(true)
   const { loanRequests, setLoanRequests } = useStore()
+  const { user } = useAuth()
 
   useEffect(() => {
     fetchLoans()
@@ -58,7 +60,7 @@ export function useLoans() {
           id: loan.profiles.id,
           name: loan.profiles.name,
           email: loan.profiles.email,
-          avatar: loan.profiles.avatar_url,
+          avatar: loan.profiles.avatar_url || 'https://images.pexels.com/photos/771742/pexels-photo-771742.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
           isVerified: loan.profiles.is_verified,
           badges: [],
           stats: {
@@ -99,7 +101,7 @@ export function useLoans() {
           fundedAt: new Date(funding.funded_at)
         })),
         createdAt: new Date(loan.created_at),
-        images: loan.images,
+        images: loan.images || [],
         medicalVerification: loan.medical_verification,
         likes: loan.loan_interactions.filter((i: any) => i.type === 'like').length,
         comments: loan.loan_interactions
@@ -136,37 +138,56 @@ export function useLoans() {
     images?: string[]
   }) => {
     try {
+      if (!user) {
+        throw new Error('User must be authenticated to create a loan')
+      }
+
+      console.log('Creating loan with data:', loanData)
+      console.log('Current user:', user.id)
+
       const { data, error } = await supabase
         .from('loan_requests')
         .insert({
-          borrower_id: (await supabase.auth.getUser()).data.user?.id,
+          borrower_id: user.id,
           title: loanData.title,
           description: loanData.description,
           amount: loanData.amount,
           interest_rate: loanData.interestRate,
           tenure_days: loanData.tenureDays,
           purpose: loanData.purpose,
-          images: loanData.images
+          images: loanData.images || [],
+          status: 'active',
+          total_funded: 0,
+          currency: 'INR'
         })
         .select()
         .single()
 
-      if (error) throw error
+      if (error) {
+        console.error('Supabase error:', error)
+        throw error
+      }
 
+      console.log('Loan created successfully:', data)
       await fetchLoans() // Refresh the list
       return { data, error: null }
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Error creating loan:', error)
       return { data: null, error }
     }
   }
 
   const fundLoan = async (loanId: string, amount: number) => {
     try {
+      if (!user) {
+        throw new Error('User must be authenticated to fund a loan')
+      }
+
       const { data, error } = await supabase
         .from('loan_fundings')
         .insert({
           loan_id: loanId,
-          lender_id: (await supabase.auth.getUser()).data.user?.id,
+          lender_id: user.id,
           amount
         })
         .select()
@@ -183,11 +204,15 @@ export function useLoans() {
 
   const addInteraction = async (loanId: string, type: 'like' | 'comment' | 'share', content?: string) => {
     try {
+      if (!user) {
+        throw new Error('User must be authenticated to interact with loans')
+      }
+
       const { data, error } = await supabase
         .from('loan_interactions')
         .insert({
           loan_id: loanId,
-          user_id: (await supabase.auth.getUser()).data.user?.id,
+          user_id: user.id,
           type,
           content
         })

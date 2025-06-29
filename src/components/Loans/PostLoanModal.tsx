@@ -5,8 +5,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useLoans } from '../../hooks/useLoans';
 import { useTranslation } from '../../utils/translations';
 import { useStore } from '../../store/useStore';
-import { verifyGovernmentId, verifyMedicalPrescription, assessLoanRisk } from '../../utils/verificationUtils';
-import { geminiAI } from '../../utils/geminiAI';
+import { verifyGovernmentId, verifyMedicalPrescription, validateLoanRequest } from '../../utils/verificationUtils';
 import toast from 'react-hot-toast';
 
 interface PostLoanModalProps {
@@ -27,7 +26,6 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
     medical: false,
     documents: false
   });
-  const [riskAssessment, setRiskAssessment] = useState<any>(null);
 
   // Form data
   const [formData, setFormData] = useState({
@@ -104,21 +102,8 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
         toast.success('Supporting document uploaded!');
       }
     } catch (error) {
+      console.error('File upload error:', error);
       toast.error('File upload failed. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const performRiskAssessment = async () => {
-    if (!formData.amount || !formData.interestRate || !formData.tenureDays) return;
-
-    try {
-      setLoading(true);
-      const assessment = await assessLoanRisk(formData, currentUser);
-      setRiskAssessment(assessment);
-    } catch (error) {
-      console.error('Risk assessment failed:', error);
     } finally {
       setLoading(false);
     }
@@ -130,9 +115,10 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
       return;
     }
 
-    // Validation
-    if (!formData.title || !formData.description || !formData.amount) {
-      toast.error('Please fill in all required fields');
+    // Validate form data
+    const validation = validateLoanRequest(formData);
+    if (!validation.isValid) {
+      toast.error(validation.errors[0]);
       return;
     }
 
@@ -150,8 +136,10 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
     setLoading(true);
 
     try {
+      console.log('Submitting loan request...', formData);
+      
       // Create loan request
-      const { error } = await createLoan({
+      const { data, error } = await createLoan({
         title: formData.title,
         description: formData.description,
         amount: parseFloat(formData.amount),
@@ -161,13 +149,18 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
         images: [] // In a real app, you'd upload to Supabase Storage
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Loan creation error:', error);
+        throw error;
+      }
 
+      console.log('Loan created successfully:', data);
       toast.success('Loan request posted successfully! 🎉');
       onClose();
       resetForm();
     } catch (error: any) {
-      toast.error(error.message || 'Failed to post loan request');
+      console.error('Submit error:', error);
+      toast.error(error.message || 'Failed to post loan request. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -194,13 +187,9 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
       medical: false,
       documents: false
     });
-    setRiskAssessment(null);
   };
 
   const nextStep = () => {
-    if (step === 1) {
-      performRiskAssessment();
-    }
     setStep(prev => Math.min(prev + 1, 4));
   };
   
@@ -229,6 +218,7 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
                 <button
                   onClick={onClose}
                   className="text-gray-400 hover:text-gray-600"
+                  disabled={loading}
                 >
                   <X size={24} />
                 </button>
@@ -379,38 +369,6 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
                           ))}
                         </div>
                       </div>
-
-                      {/* AI Risk Assessment Preview */}
-                      {riskAssessment && (
-                        <div className={`p-4 rounded-lg border-2 ${
-                          riskAssessment.riskLevel === 'low' ? 'bg-green-50 border-green-200' :
-                          riskAssessment.riskLevel === 'medium' ? 'bg-yellow-50 border-yellow-200' :
-                          'bg-red-50 border-red-200'
-                        }`}>
-                          <div className="flex items-center space-x-2 mb-2">
-                            <Bot className={
-                              riskAssessment.riskLevel === 'low' ? 'text-green-600' :
-                              riskAssessment.riskLevel === 'medium' ? 'text-yellow-600' :
-                              'text-red-600'
-                            } size={16} />
-                            <h4 className="font-medium">AI Risk Assessment</h4>
-                          </div>
-                          <p className="text-sm">
-                            Risk Level: <strong className="capitalize">{riskAssessment.riskLevel}</strong> 
-                            ({riskAssessment.score}/100)
-                          </p>
-                          {riskAssessment.recommendations.length > 0 && (
-                            <div className="mt-2">
-                              <p className="text-xs font-medium">Recommendations:</p>
-                              <ul className="text-xs list-disc list-inside">
-                                {riskAssessment.recommendations.slice(0, 2).map((rec: string, index: number) => (
-                                  <li key={index}>{rec}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                        </div>
-                      )}
                     </div>
                   </div>
                 </motion.div>
@@ -667,7 +625,7 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
                       </div>
                     </div>
 
-                    {/* AI Verification Status */}
+                    {/* Verification Status */}
                     <div className="border border-gray-200 rounded-lg p-4">
                       <h4 className="font-medium text-gray-900 mb-3 flex items-center space-x-2">
                         <Bot className="text-blue-500" size={16} />
@@ -697,38 +655,6 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
                       </div>
                     </div>
 
-                    {/* Final Risk Assessment */}
-                    {riskAssessment && (
-                      <div className={`border-2 rounded-lg p-4 ${
-                        riskAssessment.riskLevel === 'low' ? 'bg-green-50 border-green-200' :
-                        riskAssessment.riskLevel === 'medium' ? 'bg-yellow-50 border-yellow-200' :
-                        'bg-red-50 border-red-200'
-                      }`}>
-                        <h4 className="font-medium mb-2 flex items-center space-x-2">
-                          <Bot className={
-                            riskAssessment.riskLevel === 'low' ? 'text-green-600' :
-                            riskAssessment.riskLevel === 'medium' ? 'text-yellow-600' :
-                            'text-red-600'
-                          } size={16} />
-                          <span>Final AI Risk Assessment</span>
-                        </h4>
-                        <p className="text-sm mb-2">
-                          Risk Level: <strong className="capitalize">{riskAssessment.riskLevel}</strong> 
-                          ({riskAssessment.score}/100)
-                        </p>
-                        {riskAssessment.recommendations.length > 0 && (
-                          <div>
-                            <p className="text-xs font-medium mb-1">Lender Recommendations:</p>
-                            <ul className="text-xs list-disc list-inside space-y-1">
-                              {riskAssessment.recommendations.map((rec: string, index: number) => (
-                                <li key={index}>{rec}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
                     {/* Terms and Conditions */}
                     <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                       <h4 className="font-medium text-yellow-800 mb-2">⚠️ Important Terms</h4>
@@ -750,6 +676,7 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
                 <button
                   onClick={step === 1 ? onClose : prevStep}
                   className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                  disabled={loading}
                 >
                   {step === 1 ? 'Cancel' : 'Previous'}
                 </button>
@@ -758,6 +685,7 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
                   <button
                     onClick={nextStep}
                     className="px-6 py-2 bg-gradient-to-r from-blue-500 to-teal-500 text-white rounded-lg hover:from-blue-600 hover:to-teal-600 transition-all"
+                    disabled={loading}
                   >
                     Next
                   </button>
