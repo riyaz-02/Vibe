@@ -7,37 +7,41 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Missing Supabase environment variables')
   console.log('VITE_SUPABASE_URL:', supabaseUrl ? 'Set' : 'Missing')
   console.log('VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? 'Set' : 'Missing')
+  console.log('Please check your .env file and ensure both VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set')
 }
 
-export const supabase = createClient(
-  supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder-key',
-  {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: true
-    },
-    realtime: {
-      params: {
-        eventsPerSecond: 2
+// Only create client if we have valid environment variables
+export const supabase = supabaseUrl && supabaseAnonKey 
+  ? createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true
+      },
+      realtime: {
+        params: {
+          eventsPerSecond: 2
+        }
       }
-    }
-  }
-)
+    })
+  : null
 
-// Test connection
-supabase.from('profiles').select('count', { count: 'exact', head: true })
-  .then(({ error, count }) => {
-    if (error) {
-      console.error('Supabase connection test failed:', error)
-    } else {
-      console.log('Supabase connected successfully. Profiles count:', count)
-    }
-  })
-  .catch(err => {
-    console.error('Supabase connection error:', err)
-  })
+// Test connection only if client exists
+if (supabase) {
+  supabase.from('profiles').select('count', { count: 'exact', head: true })
+    .then(({ error, count }) => {
+      if (error) {
+        console.error('Supabase connection test failed:', error)
+      } else {
+        console.log('Supabase connected successfully. Profiles count:', count)
+      }
+    })
+    .catch(err => {
+      console.error('Supabase connection error:', err)
+    })
+} else {
+  console.warn('Supabase client not initialized due to missing environment variables')
+}
 
 // Database types
 export interface Database {

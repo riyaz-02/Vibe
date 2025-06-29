@@ -15,10 +15,22 @@ export function useAuth() {
       try {
         console.log('Initializing auth...')
         
-        // Get initial session with timeout - increased to 30 seconds
+        // Check if Supabase client is available
+        if (!supabase) {
+          console.error('Supabase client not available - check environment variables')
+          if (mounted) {
+            setUser(null)
+            setAuthenticated(false)
+            setCurrentUser(null)
+            setLoading(false)
+          }
+          return
+        }
+
+        // Get initial session with timeout - reduced to 10 seconds for faster feedback
         const sessionPromise = supabase.auth.getSession()
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Session timeout')), 30000)
+          setTimeout(() => reject(new Error('Session timeout - check Supabase connection')), 10000)
         )
 
         const { data: { session }, error } = await Promise.race([
@@ -58,33 +70,44 @@ export function useAuth() {
     // Initialize auth
     initializeAuth()
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (!mounted) return
-        
-        console.log('Auth state changed:', event, !!session?.user)
-        setUser(session?.user ?? null)
-        setAuthenticated(!!session?.user)
-        
-        if (session?.user) {
-          await fetchUserProfile(session.user.id)
-        } else {
-          setCurrentUser(null)
+    // Listen for auth changes only if Supabase client is available
+    let subscription: any = null
+    if (supabase) {
+      const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(
+        async (event, session) => {
+          if (!mounted) return
+          
+          console.log('Auth state changed:', event, !!session?.user)
+          setUser(session?.user ?? null)
+          setAuthenticated(!!session?.user)
+          
+          if (session?.user) {
+            await fetchUserProfile(session.user.id)
+          } else {
+            setCurrentUser(null)
+          }
+          
+          setLoading(false)
         }
-        
-        setLoading(false)
-      }
-    )
+      )
+      subscription = authSubscription
+    }
 
     return () => {
       mounted = false
-      subscription.unsubscribe()
+      if (subscription) {
+        subscription.unsubscribe()
+      }
     }
   }, [setCurrentUser, setAuthenticated])
 
   const fetchUserProfile = async (userId: string) => {
     try {
+      if (!supabase) {
+        console.error('Supabase client not available')
+        return
+      }
+
       console.log('Fetching user profile for:', userId)
       
       const { data: profile, error } = await supabase
@@ -143,6 +166,10 @@ export function useAuth() {
 
   const signUp = async (email: string, password: string, name: string) => {
     try {
+      if (!supabase) {
+        return { data: null, error: new Error('Supabase client not available') }
+      }
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -161,6 +188,10 @@ export function useAuth() {
 
   const signIn = async (email: string, password: string) => {
     try {
+      if (!supabase) {
+        return { data: null, error: new Error('Supabase client not available') }
+      }
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -174,6 +205,10 @@ export function useAuth() {
 
   const signOut = async () => {
     try {
+      if (!supabase) {
+        return { error: new Error('Supabase client not available') }
+      }
+
       const { error } = await supabase.auth.signOut()
       return { error }
     } catch (error) {
