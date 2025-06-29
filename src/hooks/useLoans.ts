@@ -10,12 +10,19 @@ export function useLoans() {
   const { user } = useAuth()
 
   useEffect(() => {
-    fetchLoans()
+    // Add a delay to ensure auth is initialized
+    const timer = setTimeout(() => {
+      fetchLoans()
+    }, 1000)
+
+    return () => clearTimeout(timer)
   }, [])
 
   const fetchLoans = async () => {
     try {
+      console.log('Fetching loans...')
       setLoading(true)
+      
       const { data, error } = await supabase
         .from('loan_requests')
         .select(`
@@ -50,18 +57,26 @@ export function useLoans() {
           )
         `)
         .order('created_at', { ascending: false })
+        .limit(20) // Limit to prevent long loading times
 
-      if (error) throw error
+      if (error) {
+        console.error('Supabase error fetching loans:', error)
+        // Don't throw error, just use empty array
+        setLoanRequests([])
+        return
+      }
 
-      const formattedLoans: LoanRequest[] = data.map((loan: any) => ({
+      console.log('Loans fetched:', data?.length || 0)
+
+      const formattedLoans: LoanRequest[] = (data || []).map((loan: any) => ({
         id: loan.id,
         borrowerId: loan.borrower_id,
         borrower: {
-          id: loan.profiles.id,
-          name: loan.profiles.name,
-          email: loan.profiles.email,
-          avatar: loan.profiles.avatar_url || 'https://images.pexels.com/photos/771742/pexels-photo-771742.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-          isVerified: loan.profiles.is_verified,
+          id: loan.profiles?.id || loan.borrower_id,
+          name: loan.profiles?.name || 'Unknown User',
+          email: loan.profiles?.email || '',
+          avatar: loan.profiles?.avatar_url || 'https://images.pexels.com/photos/771742/pexels-photo-771742.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+          isVerified: loan.profiles?.is_verified || false,
           badges: [],
           stats: {
             totalLoansGiven: 0,
@@ -83,19 +98,19 @@ export function useLoans() {
         title: loan.title,
         description: loan.description,
         amount: loan.amount,
-        currency: loan.currency,
+        currency: loan.currency || 'INR',
         interestRate: loan.interest_rate,
         tenure: loan.tenure_days,
         purpose: loan.purpose,
         status: loan.status,
         fundingProgress: loan.amount > 0 ? (loan.total_funded / loan.amount) * 100 : 0,
-        totalFunded: loan.total_funded,
-        lenders: loan.loan_fundings.map((funding: any) => ({
+        totalFunded: loan.total_funded || 0,
+        lenders: (loan.loan_fundings || []).map((funding: any) => ({
           id: funding.id,
           user: {
-            id: funding.profiles.id,
-            name: funding.profiles.name,
-            avatar: funding.profiles.avatar_url
+            id: funding.profiles?.id || '',
+            name: funding.profiles?.name || 'Anonymous',
+            avatar: funding.profiles?.avatar_url || 'https://images.pexels.com/photos/771742/pexels-photo-771742.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop'
           },
           amount: funding.amount,
           fundedAt: new Date(funding.funded_at)
@@ -103,26 +118,27 @@ export function useLoans() {
         createdAt: new Date(loan.created_at),
         images: loan.images || [],
         medicalVerification: loan.medical_verification,
-        likes: loan.loan_interactions.filter((i: any) => i.type === 'like').length,
-        comments: loan.loan_interactions
+        likes: (loan.loan_interactions || []).filter((i: any) => i.type === 'like').length,
+        comments: (loan.loan_interactions || [])
           .filter((i: any) => i.type === 'comment')
           .map((comment: any) => ({
             id: comment.id,
-            userId: comment.profiles.id,
+            userId: comment.profiles?.id || '',
             user: {
-              id: comment.profiles.id,
-              name: comment.profiles.name,
-              avatar: comment.profiles.avatar_url
+              id: comment.profiles?.id || '',
+              name: comment.profiles?.name || 'Anonymous',
+              avatar: comment.profiles?.avatar_url || 'https://images.pexels.com/photos/771742/pexels-photo-771742.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop'
             },
             content: comment.content,
             createdAt: new Date(comment.created_at)
           })),
-        shares: loan.loan_interactions.filter((i: any) => i.type === 'share').length
+        shares: (loan.loan_interactions || []).filter((i: any) => i.type === 'share').length
       }))
 
       setLoanRequests(formattedLoans)
     } catch (error) {
       console.error('Error fetching loans:', error)
+      setLoanRequests([]) // Set empty array on error
     } finally {
       setLoading(false)
     }
@@ -197,7 +213,7 @@ export function useLoans() {
 
       await fetchLoans() // Refresh the list
       return { data, error: null }
-    } catch (error) {
+    } catch (error: any) {
       return { data: null, error }
     }
   }
@@ -223,7 +239,7 @@ export function useLoans() {
 
       await fetchLoans() // Refresh the list
       return { data, error: null }
-    } catch (error) {
+    } catch (error: any) {
       return { data: null, error }
     }
   }

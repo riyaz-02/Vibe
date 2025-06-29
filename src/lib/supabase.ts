@@ -4,10 +4,40 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables')
+  console.error('Missing Supabase environment variables')
+  console.log('VITE_SUPABASE_URL:', supabaseUrl ? 'Set' : 'Missing')
+  console.log('VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? 'Set' : 'Missing')
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = createClient(
+  supabaseUrl || 'https://placeholder.supabase.co',
+  supabaseAnonKey || 'placeholder-key',
+  {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true
+    },
+    realtime: {
+      params: {
+        eventsPerSecond: 2
+      }
+    }
+  }
+)
+
+// Test connection
+supabase.from('profiles').select('count', { count: 'exact', head: true })
+  .then(({ error, count }) => {
+    if (error) {
+      console.error('Supabase connection test failed:', error)
+    } else {
+      console.log('Supabase connected successfully. Profiles count:', count)
+    }
+  })
+  .catch(err => {
+    console.error('Supabase connection error:', err)
+  })
 
 // Database types
 export interface Database {

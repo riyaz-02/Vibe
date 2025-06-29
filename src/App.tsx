@@ -19,6 +19,7 @@ function App() {
   const { isVoiceNavigationActive, currentLanguage } = useStore();
   const { loading } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [appError, setAppError] = useState<string | null>(null);
 
   useEffect(() => {
     // Manage voice navigation
@@ -34,6 +35,39 @@ function App() {
     document.documentElement.lang = currentLanguage;
   }, [currentLanguage]);
 
+  // Add error boundary
+  useEffect(() => {
+    const handleError = (error: ErrorEvent) => {
+      console.error('App error:', error);
+      setAppError('Something went wrong. Please refresh the page.');
+    };
+
+    window.addEventListener('error', handleError);
+    return () => window.removeEventListener('error', handleError);
+  }, []);
+
+  // Show error state
+  if (appError) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-red-500 text-2xl">⚠️</span>
+          </div>
+          <h1 className="text-xl font-bold text-gray-900 mb-2">Oops! Something went wrong</h1>
+          <p className="text-gray-600 mb-4">{appError}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+          >
+            Refresh Page
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading state with timeout
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -41,6 +75,9 @@ function App() {
           <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600">Loading Vibe...</p>
           <p className="text-sm text-gray-500 mt-1">Lend, Borrow, Connect – Vibe!</p>
+          <div className="mt-4 text-xs text-gray-400">
+            <p>Connecting to secure servers...</p>
+          </div>
         </div>
       </div>
     );
