@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { User } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { useStore } from '../store/useStore'
@@ -7,137 +7,27 @@ export function useAuth() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const { setCurrentUser, setAuthenticated } = useStore()
+  
+  // Use refs to prevent infinite loops
+  const initializationRef = useRef(false)
+  const currentUserIdRef = useRef<string | null>(null)
+  const profileFetchedRef = useRef(false)
 
-  useEffect(() => {
-    let mounted = true
-    let initializationComplete = false
-    let profileFetched = false // Prevent multiple profile fetches
-
-    const initializeAuth = async () => {
-      try {
-        // Check if Supabase client is available
-        if (!supabase) {
-          console.log('🎯 Running in demo mode - Supabase not configured')
-          if (mounted) {
-            setUser(null)
-            setAuthenticated(false)
-            setCurrentUser(null)
-            setLoading(false)
-            initializationComplete = true
-          }
-          return
-        }
-
-        console.log('🔐 Initializing authentication...')
-        
-        // Get initial session with proper error handling
-        const { data: { session }, error } = await supabase.auth.getSession()
-
-        if (!mounted) return
-
-        if (error) {
-          console.error('❌ Session error:', error.message)
-          setUser(null)
-          setAuthenticated(false)
-          setCurrentUser(null)
-          setLoading(false)
-          initializationComplete = true
-          return
-        }
-
-        console.log(session?.user ? '✅ User session found' : '👤 No active session')
-        setUser(session?.user ?? null)
-        setAuthenticated(!!session?.user)
-        
-        if (session?.user && !profileFetched) {
-          profileFetched = true
-          await fetchUserProfile(session.user.id)
-        }
-        
-        setLoading(false)
-        initializationComplete = true
-      } catch (error: any) {
-        console.error('❌ Auth initialization failed:', error.message)
-        
-        if (mounted) {
-          setUser(null)
-          setAuthenticated(false)
-          setCurrentUser(null)
-          setLoading(false)
-          initializationComplete = true
-        }
-      }
+  const fetchUserProfile = useCallback(async (userId: string) => {
+    // Prevent multiple fetches for the same user
+    if (currentUserIdRef.current === userId && profileFetchedRef.current) {
+      return
     }
 
-    // Set a timeout to prevent hanging
-    const timeoutId = setTimeout(() => {
-      if (!initializationComplete && mounted) {
-        console.warn('⏰ Auth initialization timeout - continuing in demo mode')
-        setUser(null)
-        setAuthenticated(false)
-        setCurrentUser(null)
-        setLoading(false)
-      }
-    }, 8000) // Reduced to 8 seconds
-
-    // Initialize auth
-    initializeAuth()
-
-    // Listen for auth changes only if Supabase client is available
-    let subscription: any = null
-    if (supabase) {
-      try {
-        const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(
-          async (event, session) => {
-            if (!mounted) return
-            
-            console.log('🔄 Auth state changed:', event)
-            
-            // Prevent infinite loops by checking if user actually changed
-            const newUser = session?.user ?? null
-            const userChanged = newUser?.id !== user?.id
-            
-            if (userChanged) {
-              setUser(newUser)
-              setAuthenticated(!!newUser)
-              
-              if (newUser && !profileFetched) {
-                profileFetched = true
-                console.log('👤 Fetching user profile...')
-                await fetchUserProfile(newUser.id)
-              } else if (!newUser) {
-                profileFetched = false
-                setCurrentUser(null)
-              }
-            }
-            
-            if (initializationComplete) {
-              setLoading(false)
-            }
-          }
-        )
-        subscription = authSubscription
-      } catch (error: any) {
-        console.error('❌ Failed to set up auth listener:', error.message)
-      }
-    }
-
-    return () => {
-      mounted = false
-      profileFetched = false
-      clearTimeout(timeoutId)
-      if (subscription) {
-        subscription.unsubscribe()
-      }
-    }
-  }, [setCurrentUser, setAuthenticated]) // Removed user dependency to prevent loops
-
-  const fetchUserProfile = async (userId: string) => {
     try {
       if (!supabase) {
-        console.error('❌ Supabase client not available')
+        console.log('🎭 Supabase not available - skipping profile fetch')
         return
       }
+
+      console.log('👤 Fetching user profile for:', userId)
+      currentUserIdRef.current = userId
+      profileFetchedRef.current = true
 
       const { data: profile, error } = await supabase
         .from('profiles')
@@ -151,10 +41,10 @@ export function useAuth() {
         .single()
 
       if (error) {
-        console.error('❌ Profile fetch error:', error.message)
         if (error.code === 'PGRST116') {
           console.log('📝 Profile not found - user can create one later')
-          return
+        } else {
+          console.error('❌ Profile fetch error:', error.message)
         }
         return
       }
@@ -189,7 +79,131 @@ export function useAuth() {
     } catch (error: any) {
       console.error('❌ Error fetching user profile:', error.message)
     }
-  }
+  }, [setCurrentUser])
+
+  useEffect(() => {
+    let mounted = true
+    let authSubscription: any = null
+
+    const initializeAuth = async () => {
+      // Prevent multiple initializations
+      if (initializationRef.current) {
+        return
+      }
+      initializationRef.current = true
+
+      try {
+        // Check if Supabase client is available
+        if (!supabase) {
+          console.log('🎯 Running in demo mode - Supabase not configured')
+          if (mounted) {
+            setUser(null)
+            setAuthenticated(false)
+            setCurrentUser(null)
+            setLoading(false)
+          }
+          return
+        }
+
+        console.log('🔐 Initializing authentication...')
+        
+        // Get initial session
+        const { data: { session }, error } = await supabase.auth.getSession()
+
+        if (!mounted) return
+
+        if (error) {
+          console.error('❌ Session error:', error.message)
+          setUser(null)
+          setAuthenticated(false)
+          setCurrentUser(null)
+          setLoading(false)
+          return
+        }
+
+        const currentUser = session?.user ?? null
+        console.log(currentUser ? '✅ User session found' : '👤 No active session')
+        
+        setUser(currentUser)
+        setAuthenticated(!!currentUser)
+        
+        if (currentUser) {
+          await fetchUserProfile(currentUser.id)
+        }
+        
+        setLoading(false)
+
+        // Set up auth state listener
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          async (event, session) => {
+            if (!mounted) return
+            
+            console.log('🔄 Auth state changed:', event)
+            
+            const newUser = session?.user ?? null
+            const userChanged = newUser?.id !== currentUserIdRef.current
+            
+            // Only update if user actually changed
+            if (userChanged) {
+              setUser(newUser)
+              setAuthenticated(!!newUser)
+              
+              if (newUser) {
+                // Reset profile fetch flag for new user
+                profileFetchedRef.current = false
+                await fetchUserProfile(newUser.id)
+              } else {
+                // Clear user data
+                currentUserIdRef.current = null
+                profileFetchedRef.current = false
+                setCurrentUser(null)
+              }
+            }
+            
+            setLoading(false)
+          }
+        )
+        
+        authSubscription = subscription
+      } catch (error: any) {
+        console.error('❌ Auth initialization failed:', error.message)
+        
+        if (mounted) {
+          setUser(null)
+          setAuthenticated(false)
+          setCurrentUser(null)
+          setLoading(false)
+        }
+      }
+    }
+
+    // Set a timeout to prevent hanging
+    const timeoutId = setTimeout(() => {
+      if (!initializationRef.current && mounted) {
+        console.warn('⏰ Auth initialization timeout - continuing in demo mode')
+        setUser(null)
+        setAuthenticated(false)
+        setCurrentUser(null)
+        setLoading(false)
+        initializationRef.current = true
+      }
+    }, 5000) // Reduced to 5 seconds
+
+    // Initialize auth
+    initializeAuth()
+
+    return () => {
+      mounted = false
+      clearTimeout(timeoutId)
+      if (authSubscription) {
+        authSubscription.unsubscribe()
+      }
+      // Reset refs on cleanup
+      initializationRef.current = false
+      currentUserIdRef.current = null
+      profileFetchedRef.current = false
+    }
+  }, [fetchUserProfile, setAuthenticated, setCurrentUser])
 
   const signUp = async (email: string, password: string, name: string) => {
     try {
@@ -259,16 +273,20 @@ export function useAuth() {
       }
 
       console.log('👋 Signing out...')
+      
+      // Clear user data immediately
+      setUser(null)
+      setAuthenticated(false)
+      setCurrentUser(null)
+      currentUserIdRef.current = null
+      profileFetchedRef.current = false
+      
       const { error } = await supabase.auth.signOut()
       
       if (error) {
         console.error('❌ Sign out error:', error.message)
       } else {
         console.log('✅ Signed out successfully')
-        // Clear user data immediately
-        setUser(null)
-        setAuthenticated(false)
-        setCurrentUser(null)
       }
       
       return { error }
