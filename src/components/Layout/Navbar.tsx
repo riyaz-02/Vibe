@@ -1,12 +1,18 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, LayoutDashboard, User, HelpCircle, Mic, MicOff, Globe, Bell } from 'lucide-react';
+import { Home, LayoutDashboard, User, HelpCircle, Mic, MicOff, Globe, Bell, LogIn } from 'lucide-react';
 import { useStore } from '../../store/useStore';
+import { useAuth } from '../../hooks/useAuth';
 import { useTranslation } from '../../utils/translations';
 import { motion } from 'framer-motion';
 
-const Navbar: React.FC = () => {
+interface NavbarProps {
+  onAuthClick: () => void;
+}
+
+const Navbar: React.FC<NavbarProps> = ({ onAuthClick }) => {
   const location = useLocation();
+  const { user, signOut } = useAuth();
   const { 
     currentLanguage, 
     setCurrentLanguage,
@@ -35,6 +41,10 @@ const Navbar: React.FC = () => {
   ];
 
   const unreadNotifications = notifications.filter(n => !n.isRead).length;
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
 
   return (
     <nav className="bg-white shadow-lg border-b border-gray-200 sticky top-0 z-50">
@@ -118,29 +128,65 @@ const Navbar: React.FC = () => {
               {isVoiceNavigationActive ? <Mic size={20} /> : <MicOff size={20} />}
             </button>
 
-            {/* Notifications */}
-            <button className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors">
-              <Bell size={20} />
-              {unreadNotifications > 0 && (
-                <motion.span
-                  className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center"
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                >
-                  {unreadNotifications}
-                </motion.span>
-              )}
-            </button>
+            {user ? (
+              <>
+                {/* Notifications */}
+                <button className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors">
+                  <Bell size={20} />
+                  {unreadNotifications > 0 && (
+                    <motion.span
+                      className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center"
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                    >
+                      {unreadNotifications}
+                    </motion.span>
+                  )}
+                </button>
 
-            {/* User Avatar */}
-            {currentUser && (
-              <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-gray-200">
-                <img
-                  src={currentUser.avatar || 'https://images.pexels.com/photos/771742/pexels-photo-771742.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop'}
-                  alt={currentUser.name}
-                  className="w-full h-full object-cover"
-                />
-              </div>
+                {/* User Menu */}
+                <div className="relative group">
+                  <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-gray-200 cursor-pointer">
+                    <img
+                      src={currentUser?.avatar || 'https://images.pexels.com/photos/771742/pexels-photo-771742.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop'}
+                      alt={currentUser?.name || 'User'}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                    <div className="px-4 py-2 border-b border-gray-200">
+                      <p className="font-medium text-gray-900">{currentUser?.name}</p>
+                      <p className="text-sm text-gray-500">{user.email}</p>
+                    </div>
+                    <Link
+                      to="/profile"
+                      className="block px-4 py-2 text-gray-700 hover:bg-gray-50"
+                    >
+                      View Profile
+                    </Link>
+                    <Link
+                      to="/dashboard"
+                      className="block px-4 py-2 text-gray-700 hover:bg-gray-50"
+                    >
+                      Dashboard
+                    </Link>
+                    <button
+                      onClick={handleSignOut}
+                      className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-b-lg"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <button
+                onClick={onAuthClick}
+                className="flex items-center space-x-2 bg-gradient-to-r from-blue-500 to-teal-500 text-white px-4 py-2 rounded-lg font-medium hover:from-blue-600 hover:to-teal-600 transition-all duration-200"
+              >
+                <LogIn size={18} />
+                <span>Sign In</span>
+              </button>
             )}
           </div>
         </div>
