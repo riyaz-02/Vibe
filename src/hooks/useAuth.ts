@@ -37,14 +37,14 @@ export function useAuth() {
             setCurrentUser(null)
             setLoading(false)
           }
-        }, 3000) // Reduced to 3 seconds
+        }, 6000) // Increased to 6 seconds
 
         // Get initial session with timeout
         const sessionPromise = supabase.auth.getSession()
         const { data: { session }, error } = await Promise.race([
           sessionPromise,
           new Promise<any>((_, reject) => 
-            setTimeout(() => reject(new Error('Session timeout')), 2500)
+            setTimeout(() => reject(new Error('Session timeout')), 5000) // Increased to 5 seconds
           )
         ])
 
