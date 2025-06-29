@@ -11,22 +11,33 @@ export function useLoans() {
   const { user } = useAuth()
 
   useEffect(() => {
-    // Add a delay to ensure auth is initialized
-    const timer = setTimeout(() => {
-      fetchLoans()
-    }, 1000)
+    // Only fetch loans once when component mounts
+    let mounted = true
+    
+    const fetchLoansWithDelay = async () => {
+      // Add a small delay to ensure auth is settled
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
+      if (mounted) {
+        await fetchLoans()
+      }
+    }
 
-    return () => clearTimeout(timer)
-  }, [])
+    fetchLoansWithDelay()
+
+    return () => {
+      mounted = false
+    }
+  }, []) // Remove dependencies to prevent refetching
 
   const fetchLoans = async () => {
     try {
-      console.log('Fetching loans...')
+      console.log('📋 Fetching loans...')
       setLoading(true)
       
       // If Supabase is not available, use mock data
       if (!supabase) {
-        console.log('Using mock loan data (Supabase not available)')
+        console.log('🎭 Using mock loan data (Supabase not available)')
         setLoanRequests(mockLoanRequests)
         setLoading(false)
         return
@@ -69,15 +80,15 @@ export function useLoans() {
         .limit(20) // Limit to prevent long loading times
 
       if (error) {
-        console.error('Supabase error fetching loans:', error)
+        console.error('❌ Supabase error fetching loans:', error)
         // Use mock data as fallback
-        console.log('Using mock loan data as fallback')
+        console.log('🎭 Using mock loan data as fallback')
         setLoanRequests(mockLoanRequests)
         setLoading(false)
         return
       }
 
-      console.log('Loans fetched from Supabase:', data?.length || 0)
+      console.log('✅ Loans fetched from Supabase:', data?.length || 0)
 
       const formattedLoans: LoanRequest[] = (data || []).map((loan: any) => ({
         id: loan.id,
@@ -148,15 +159,15 @@ export function useLoans() {
 
       // If no data from Supabase, use mock data
       if (formattedLoans.length === 0) {
-        console.log('No loans in database, using mock data')
+        console.log('📝 No loans in database, using mock data')
         setLoanRequests(mockLoanRequests)
       } else {
         setLoanRequests(formattedLoans)
       }
     } catch (error) {
-      console.error('Error fetching loans:', error)
+      console.error('❌ Error fetching loans:', error)
       // Use mock data as fallback
-      console.log('Using mock loan data due to error')
+      console.log('🎭 Using mock loan data due to error')
       setLoanRequests(mockLoanRequests)
     } finally {
       setLoading(false)
@@ -181,8 +192,8 @@ export function useLoans() {
         throw new Error('Database service not available. Please check your connection.')
       }
 
-      console.log('Creating loan with data:', loanData)
-      console.log('Current user:', user.id)
+      console.log('📝 Creating loan with data:', loanData)
+      console.log('👤 Current user:', user.id)
 
       const { data, error } = await supabase
         .from('loan_requests')
@@ -203,15 +214,15 @@ export function useLoans() {
         .single()
 
       if (error) {
-        console.error('Supabase error:', error)
+        console.error('❌ Supabase error:', error)
         throw error
       }
 
-      console.log('Loan created successfully:', data)
+      console.log('✅ Loan created successfully:', data)
       await fetchLoans() // Refresh the list
       return { data, error: null }
     } catch (error: any) {
-      console.error('Error creating loan:', error)
+      console.error('❌ Error creating loan:', error)
       return { data: null, error }
     }
   }
@@ -226,6 +237,8 @@ export function useLoans() {
         throw new Error('Database service not available. Please check your connection.')
       }
 
+      console.log('💰 Funding loan:', loanId, 'Amount:', amount)
+
       const { data, error } = await supabase
         .from('loan_fundings')
         .insert({
@@ -236,11 +249,16 @@ export function useLoans() {
         .select()
         .single()
 
-      if (error) throw error
+      if (error) {
+        console.error('❌ Funding error:', error)
+        throw error
+      }
 
+      console.log('✅ Loan funded successfully:', data)
       await fetchLoans() // Refresh the list
       return { data, error: null }
     } catch (error: any) {
+      console.error('❌ Error funding loan:', error)
       return { data: null, error }
     }
   }

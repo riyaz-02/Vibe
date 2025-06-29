@@ -11,6 +11,7 @@ export function useAuth() {
   useEffect(() => {
     let mounted = true
     let initializationComplete = false
+    let profileFetched = false // Prevent multiple profile fetches
 
     const initializeAuth = async () => {
       try {
@@ -48,7 +49,8 @@ export function useAuth() {
         setUser(session?.user ?? null)
         setAuthenticated(!!session?.user)
         
-        if (session?.user) {
+        if (session?.user && !profileFetched) {
+          profileFetched = true
           await fetchUserProfile(session.user.id)
         }
         
@@ -76,7 +78,7 @@ export function useAuth() {
         setCurrentUser(null)
         setLoading(false)
       }
-    }, 10000) // 10 second timeout
+    }, 8000) // Reduced to 8 seconds
 
     // Initialize auth
     initializeAuth()
@@ -90,13 +92,23 @@ export function useAuth() {
             if (!mounted) return
             
             console.log('🔄 Auth state changed:', event)
-            setUser(session?.user ?? null)
-            setAuthenticated(!!session?.user)
             
-            if (session?.user) {
-              await fetchUserProfile(session.user.id)
-            } else {
-              setCurrentUser(null)
+            // Prevent infinite loops by checking if user actually changed
+            const newUser = session?.user ?? null
+            const userChanged = newUser?.id !== user?.id
+            
+            if (userChanged) {
+              setUser(newUser)
+              setAuthenticated(!!newUser)
+              
+              if (newUser && !profileFetched) {
+                profileFetched = true
+                console.log('👤 Fetching user profile...')
+                await fetchUserProfile(newUser.id)
+              } else if (!newUser) {
+                profileFetched = false
+                setCurrentUser(null)
+              }
             }
             
             if (initializationComplete) {
@@ -112,12 +124,13 @@ export function useAuth() {
 
     return () => {
       mounted = false
+      profileFetched = false
       clearTimeout(timeoutId)
       if (subscription) {
         subscription.unsubscribe()
       }
     }
-  }, [setCurrentUser, setAuthenticated])
+  }, [setCurrentUser, setAuthenticated]) // Removed user dependency to prevent loops
 
   const fetchUserProfile = async (userId: string) => {
     try {
@@ -126,8 +139,6 @@ export function useAuth() {
         return
       }
 
-      console.log('👤 Fetching user profile...')
-      
       const { data: profile, error } = await supabase
         .from('profiles')
         .select(`
@@ -254,6 +265,10 @@ export function useAuth() {
         console.error('❌ Sign out error:', error.message)
       } else {
         console.log('✅ Signed out successfully')
+        // Clear user data immediately
+        setUser(null)
+        setAuthenticated(false)
+        setCurrentUser(null)
       }
       
       return { error }
