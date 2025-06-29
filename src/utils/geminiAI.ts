@@ -6,7 +6,7 @@ export class GeminiAI {
   constructor() {
     // Get API key from environment variables
     this.apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
-    this.baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+    this.baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
     
     if (!this.apiKey || this.apiKey === 'your_gemini_api_key_here') {
       console.warn('⚠️ Gemini API key not configured. AI features will use mock responses.');
@@ -25,47 +25,54 @@ export class GeminiAI {
         return this.getMockResponse(contents);
       }
 
+      const requestBody = {
+        contents: contents,
+        generationConfig: {
+          temperature: 0.7,
+          topK: 32,
+          topP: 1,
+          maxOutputTokens: 4096,
+        },
+        safetySettings: [
+          {
+            category: "HARM_CATEGORY_HARASSMENT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          },
+          {
+            category: "HARM_CATEGORY_HATE_SPEECH",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          },
+          {
+            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          },
+          {
+            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          }
+        ]
+      };
+
+      console.log('Making Gemini API request to:', this.baseUrl);
+      
       const response = await fetch(`${this.baseUrl}?key=${this.apiKey}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          contents,
-          generationConfig: {
-            temperature: 0.7,
-            topK: 32,
-            topP: 1,
-            maxOutputTokens: 4096,
-          },
-          safetySettings: [
-            {
-              category: "HARM_CATEGORY_HARASSMENT",
-              threshold: "BLOCK_MEDIUM_AND_ABOVE"
-            },
-            {
-              category: "HARM_CATEGORY_HATE_SPEECH",
-              threshold: "BLOCK_MEDIUM_AND_ABOVE"
-            },
-            {
-              category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-              threshold: "BLOCK_MEDIUM_AND_ABOVE"
-            },
-            {
-              category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-              threshold: "BLOCK_MEDIUM_AND_ABOVE"
-            }
-          ]
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Gemini API error response:', errorText);
         throw new Error(`Gemini API error: ${response.status} - ${response.statusText}`);
       }
 
       const data = await response.json();
       
       if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+        console.error('Invalid Gemini API response:', data);
         throw new Error('Invalid response format from Gemini API');
       }
       
@@ -222,6 +229,7 @@ export class GeminiAI {
 
       const contents = [
         {
+          role: "user",
           parts: [
             { text: prompt },
             {
@@ -324,6 +332,7 @@ export class GeminiAI {
 
       const contents = [
         {
+          role: "user",
           parts: [
             { text: prompt },
             {
@@ -427,24 +436,16 @@ export class GeminiAI {
         - 💬 24/7 AI chatbot support
         
         Current conversation context: Student lending platform assistance on Vibe
+        
+        Please respond to the user's message: ${message}
       `;
 
       const contents = [
         {
+          role: "user",
           parts: [{ text: systemPrompt }]
         }
       ];
-
-      // Add conversation history for context
-      conversationHistory.slice(-3).forEach(msg => {
-        contents.push({
-          parts: [{ text: `${msg.role}: ${msg.content}` }]
-        });
-      });
-
-      contents.push({
-        parts: [{ text: `User: ${message}` }]
-      });
 
       const response = await this.makeRequest(contents);
       return response || "I'm sorry, I couldn't process your request right now. Please try again and let's keep the vibe going! 🚀";
@@ -493,6 +494,7 @@ export class GeminiAI {
 
       const contents = [
         {
+          role: "user",
           parts: [{ text: prompt }]
         }
       ];
