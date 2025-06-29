@@ -5,6 +5,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useLoans } from '../../hooks/useLoans';
 import { useTranslation } from '../../utils/translations';
 import LoanCard from './LoanCard';
+import PostLoanModal from '../Loans/PostLoanModal';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 
@@ -181,33 +182,11 @@ const Feed: React.FC = () => {
         </div>
       )}
 
-      {/* Post Loan Modal Placeholder */}
-      {showPostModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <motion.div
-            className="bg-white rounded-xl max-w-md w-full p-6"
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-          >
-            <h3 className="text-lg font-semibold mb-4">Post a Loan Request</h3>
-            <p className="text-gray-600 mb-4">
-              This feature will open the loan request form with fields for amount, purpose, description, and document upload.
-            </p>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-              <p className="text-blue-800 text-sm">
-                <strong>Coming Soon:</strong> Full loan posting functionality with KYC verification, 
-                medical prescription detection, and blockchain-secured contracts.
-              </p>
-            </div>
-            <button
-              onClick={() => setShowPostModal(false)}
-              className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-            >
-              Close
-            </button>
-          </motion.div>
-        </div>
-      )}
+      {/* Post Loan Modal */}
+      <PostLoanModal 
+        isOpen={showPostModal} 
+        onClose={() => setShowPostModal(false)} 
+      />
     </div>
   );
 };
