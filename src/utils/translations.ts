@@ -2,7 +2,8 @@ import { Language } from '../types';
 
 export const translations: Record<Language, Record<string, string>> = {
   en: {
-    'app.title': 'LendConnect',
+    'app.title': 'Vibe',
+    'app.tagline': 'Lend, Borrow, Connect – Vibe!',
     'nav.home': 'Home',
     'nav.dashboard': 'Dashboard',
     'nav.profile': 'Profile',
@@ -27,7 +28,8 @@ export const translations: Record<Language, Record<string, string>> = {
     'built_with_bolt': 'Built with Bolt.new'
   },
   hi: {
-    'app.title': 'लेंडकनेक्ट',
+    'app.title': 'वाइब',
+    'app.tagline': 'उधार दें, उधार लें, जुड़ें – वाइब!',
     'nav.home': 'होम',
     'nav.dashboard': 'डैशबोर्ड',
     'nav.profile': 'प्रोफाइल',
@@ -52,7 +54,8 @@ export const translations: Record<Language, Record<string, string>> = {
     'built_with_bolt': 'Bolt.new के साथ निर्मित'
   },
   hinglish: {
-    'app.title': 'LendConnect',
+    'app.title': 'Vibe',
+    'app.tagline': 'Lend, Borrow, Connect – Vibe!',
     'nav.home': 'Home',
     'nav.dashboard': 'Dashboard',
     'nav.profile': 'Profile',
@@ -77,7 +80,8 @@ export const translations: Record<Language, Record<string, string>> = {
     'built_with_bolt': 'Built with Bolt.new'
   },
   bn: {
-    'app.title': 'লেন্ডকানেক্ট',
+    'app.title': 'ভাইব',
+    'app.tagline': 'ঋণ দিন, ঋণ নিন, সংযুক্ত হন – ভাইব!',
     'nav.home': 'হোম',
     'nav.dashboard': 'ড্যাশবোর্ড',
     'nav.profile': 'প্রোফাইল',
@@ -102,7 +106,8 @@ export const translations: Record<Language, Record<string, string>> = {
     'built_with_bolt': 'Bolt.new দিয়ে তৈরি'
   },
   es: {
-    'app.title': 'LendConnect',
+    'app.title': 'Vibe',
+    'app.tagline': '¡Presta, Pide Prestado, Conecta – Vibe!',
     'nav.home': 'Inicio',
     'nav.dashboard': 'Panel',
     'nav.profile': 'Perfil',
@@ -127,7 +132,8 @@ export const translations: Record<Language, Record<string, string>> = {
     'built_with_bolt': 'Construido con Bolt.new'
   },
   zh: {
-    'app.title': '借贷连接',
+    'app.title': 'Vibe',
+    'app.tagline': '借贷、借款、连接 – Vibe！',
     'nav.home': '首页',
     'nav.dashboard': '仪表板',
     'nav.profile': '个人资料',

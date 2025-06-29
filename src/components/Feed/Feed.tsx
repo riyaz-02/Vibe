@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Filter, Search, TrendingUp, LogIn } from 'lucide-react';
+import { Plus, Filter, Search, TrendingUp, LogIn, Zap } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { useAuth } from '../../hooks/useAuth';
 import { useLoans } from '../../hooks/useLoans';
@@ -92,8 +92,15 @@ const Feed: React.FC = () => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Student Loan Feed</h1>
-            <p className="text-gray-600">Help students achieve their dreams through peer-to-peer lending</p>
+            <div className="flex items-center space-x-3 mb-2">
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-teal-500 rounded-lg flex items-center justify-center">
+                <Zap className="text-white" size={16} />
+              </div>
+              <h1 className="text-2xl font-bold text-gray-900">Student Loan Feed</h1>
+            </div>
+            <p className="text-gray-600">
+              <span className="font-medium text-blue-600">Vibe</span> with students worldwide through peer-to-peer lending
+            </p>
           </div>
           
           {user ? (
@@ -110,7 +117,7 @@ const Feed: React.FC = () => {
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <div className="flex items-center space-x-2 text-blue-800">
                 <LogIn size={20} />
-                <span className="font-medium">Sign in to post loan requests and lend money</span>
+                <span className="font-medium">Sign in to post loan requests and start vibing!</span>
               </div>
             </div>
           )}
@@ -150,10 +157,10 @@ const Feed: React.FC = () => {
       <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-xl p-4 mb-6 border border-orange-200">
         <div className="flex items-center space-x-2 mb-2">
           <TrendingUp className="text-orange-500" size={20} />
-          <h2 className="font-semibold text-orange-800">Trending: Medical Emergency Campaigns</h2>
+          <h2 className="font-semibold text-orange-800">Trending: AI-Verified Medical Campaigns</h2>
         </div>
         <p className="text-orange-700 text-sm">
-          Support students facing medical emergencies. All medical loans are verified through our AI prescription detection system.
+          Support students facing medical emergencies. All medical loans are verified through our Gemini AI prescription detection system.
         </p>
       </div>
 
@@ -178,7 +185,7 @@ const Feed: React.FC = () => {
             <Search size={24} className="text-gray-400" />
           </div>
           <h3 className="text-lg font-medium text-gray-900 mb-2">No loans found</h3>
-          <p className="text-gray-600">Try adjusting your search or filter criteria</p>
+          <p className="text-gray-600">Try adjusting your search or filter criteria to find the perfect vibe!</p>
         </div>
       )}
 

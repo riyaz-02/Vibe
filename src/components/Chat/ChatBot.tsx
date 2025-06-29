@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Send, Bot, User, Minimize2, Maximize2 } from 'lucide-react';
+import { MessageCircle, X, Send, Bot, User, Minimize2, Maximize2, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { geminiAI } from '../../utils/geminiAI';
 import { useStore } from '../../store/useStore';
@@ -18,7 +18,7 @@ const ChatBot: React.FC = () => {
     {
       id: '1',
       role: 'bot',
-      content: 'Hi! I\'m your LendConnect AI assistant. I can help you with loan requests, verification processes, and answer any questions about our P2P lending platform. How can I assist you today?',
+      content: 'Hi! I\'m your Vibe AI assistant. I can help you with loan requests, verification processes, and answer any questions about our P2P lending platform. Ready to vibe together? How can I assist you today?',
       timestamp: new Date()
     }
   ]);
@@ -134,11 +134,11 @@ const ChatBot: React.FC = () => {
             <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-blue-500 to-teal-500 text-white rounded-t-xl">
               <div className="flex items-center space-x-2">
                 <div className="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                  <Bot size={18} />
+                  <Zap size={16} />
                 </div>
                 <div>
-                  <h3 className="font-semibold">LendConnect AI</h3>
-                  <p className="text-xs opacity-90">Always here to help</p>
+                  <h3 className="font-semibold">Vibe AI Assistant</h3>
+                  <p className="text-xs opacity-90">Always here to help you vibe!</p>
                 </div>
               </div>
               <div className="flex items-center space-x-2">
@@ -174,9 +174,9 @@ const ChatBot: React.FC = () => {
                         <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
                           message.role === 'user' 
                             ? 'bg-blue-500 text-white' 
-                            : 'bg-gray-200 text-gray-600'
+                            : 'bg-gradient-to-r from-blue-500 to-teal-500 text-white'
                         }`}>
-                          {message.role === 'user' ? <User size={12} /> : <Bot size={12} />}
+                          {message.role === 'user' ? <User size={12} /> : <Zap size={12} />}
                         </div>
                         <div className={`rounded-lg p-3 ${
                           message.role === 'user'
@@ -201,8 +201,8 @@ const ChatBot: React.FC = () => {
                       animate={{ opacity: 1, y: 0 }}
                     >
                       <div className="flex items-start space-x-2">
-                        <div className="w-6 h-6 bg-gray-200 text-gray-600 rounded-full flex items-center justify-center">
-                          <Bot size={12} />
+                        <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-teal-500 text-white rounded-full flex items-center justify-center">
+                          <Zap size={12} />
                         </div>
                         <div className="bg-gray-100 rounded-lg p-3">
                           <div className="flex space-x-1">
@@ -221,7 +221,7 @@ const ChatBot: React.FC = () => {
                 {/* Quick Actions */}
                 {messages.length === 1 && (
                   <div className="px-4 pb-2">
-                    <p className="text-xs text-gray-500 mb-2">Quick questions:</p>
+                    <p className="text-xs text-gray-500 mb-2">Quick questions to get you vibing:</p>
                     <div className="flex flex-wrap gap-1">
                       {quickActions.slice(0, 3).map((action, index) => (
                         <button
@@ -251,13 +251,13 @@ const ChatBot: React.FC = () => {
                     <button
                       onClick={handleSendMessage}
                       disabled={!inputMessage.trim() || isLoading}
-                      className="bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="bg-gradient-to-r from-blue-500 to-teal-500 text-white p-2 rounded-lg hover:from-blue-600 hover:to-teal-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Send size={16} />
                     </button>
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
-                    AI-powered assistant • Press Enter to send
+                    Powered by Gemini AI • Press Enter to send
                   </p>
                 </div>
               </>

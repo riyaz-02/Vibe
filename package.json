@@ -1,8 +1,9 @@
 {
-  "name": "lendconnect-p2p-platform",
+  "name": "vibe-p2p-platform",
   "private": true,
   "version": "1.0.0",
   "type": "module",
+  "description": "Vibe - Lend, Borrow, Connect! P2P lending platform for students",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ExternalLink, Shield, Globe, Accessibility } from 'lucide-react';
+import { ExternalLink, Shield, Globe, Accessibility, Zap } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { useTranslation } from '../../utils/translations';
 
@@ -13,14 +13,19 @@ const Footer: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand Section */}
           <div className="col-span-1 md:col-span-2">
-            <div className="flex items-center space-x-2 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-teal-500 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold">LC</span>
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-teal-500 rounded-xl flex items-center justify-center">
+                <Zap className="text-white" size={24} />
               </div>
-              <span className="text-2xl font-bold">{t('app.title')}</span>
+              <div>
+                <span className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-teal-400 bg-clip-text text-transparent">
+                  {t('app.title')}
+                </span>
+                <p className="text-sm text-gray-300 mt-1">{t('app.tagline')}</p>
+              </div>
             </div>
             <p className="text-gray-300 mb-6 max-w-md">
-              Connecting students globally through peer-to-peer lending. Secure, accessible, and built for the future of finance.
+              Connecting students globally through peer-to-peer lending. Secure, accessible, and built for the future of finance with AI-powered verification and blockchain security.
             </p>
             
             {/* Built with Bolt.new Badge */}
@@ -35,6 +40,7 @@ const Footer: React.FC = () => {
             <h3 className="text-lg font-semibold mb-4">Platform</h3>
             <ul className="space-y-2 text-gray-300">
               <li><a href="#" className="hover:text-white transition-colors">How it Works</a></li>
+              <li><a href="#" className="hover:text-white transition-colors">AI Verification</a></li>
               <li><a href="#" className="hover:text-white transition-colors">Safety & Security</a></li>
               <li><a href="#" className="hover:text-white transition-colors">Blockchain Explorer</a></li>
               <li><a href="#" className="hover:text-white transition-colors">API Documentation</a></li>
@@ -46,6 +52,7 @@ const Footer: React.FC = () => {
             <h3 className="text-lg font-semibold mb-4">Support</h3>
             <ul className="space-y-2 text-gray-300">
               <li><a href="#" className="hover:text-white transition-colors">Help Center</a></li>
+              <li><a href="#" className="hover:text-white transition-colors">AI Chatbot</a></li>
               <li><a href="#" className="hover:text-white transition-colors">Contact Us</a></li>
               <li><a href="#" className="hover:text-white transition-colors">Community Guidelines</a></li>
               <li><a href="#" className="hover:text-white transition-colors">Accessibility</a></li>
@@ -58,7 +65,7 @@ const Footer: React.FC = () => {
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center space-x-6 mb-4 md:mb-0">
               <span className="text-gray-400 text-sm">
-                © 2024 LendConnect. Platform fee: 1-2%. Lending involves risks.
+                © 2024 Vibe. Platform fee: 1-2%. Lending involves risks.
               </span>
             </div>
             
@@ -83,6 +90,7 @@ const Footer: React.FC = () => {
           
           <div className="mt-4 text-center text-gray-400 text-xs">
             <p>Disclaimer: Peer-to-peer lending involves risks. Assess loan viability carefully. We are not a bank or financial institution.</p>
+            <p className="mt-1">Powered by Gemini AI • Secured by Algorand Blockchain • Built with ❤️ for students worldwide</p>
           </div>
         </div>
       </div>

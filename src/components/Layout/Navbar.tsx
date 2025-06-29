@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, LayoutDashboard, User, HelpCircle, Mic, MicOff, Globe, Bell, LogIn } from 'lucide-react';
+import { Home, LayoutDashboard, User, HelpCircle, Mic, MicOff, Globe, Bell, LogIn, Zap } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { useAuth } from '../../hooks/useAuth';
 import { useTranslation } from '../../utils/translations';
@@ -51,11 +51,18 @@ const Navbar: React.FC<NavbarProps> = ({ onAuthClick }) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-teal-500 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">LC</span>
+          <Link to="/" className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-teal-500 rounded-xl flex items-center justify-center">
+              <Zap className="text-white" size={20} />
             </div>
-            <span className="text-xl font-bold text-gray-900">{t('app.title')}</span>
+            <div className="flex flex-col">
+              <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-teal-600 bg-clip-text text-transparent">
+                {t('app.title')}
+              </span>
+              <span className="text-xs text-gray-500 -mt-1 hidden sm:block">
+                {t('app.tagline')}
+              </span>
+            </div>
           </Link>
 
           {/* Navigation Links */}

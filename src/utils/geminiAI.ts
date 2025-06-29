@@ -83,7 +83,7 @@ export class GeminiAI {
       const mimeType = file.type;
 
       const prompt = `
-        Analyze this government ID document image and provide a detailed verification report.
+        Analyze this government ID document image and provide a detailed verification report for Vibe P2P lending platform.
         
         Please examine:
         1. Document authenticity and security features
@@ -110,7 +110,7 @@ export class GeminiAI {
           "details": "detailed explanation"
         }
         
-        Be thorough but concise. Focus on authenticity verification.
+        Be thorough but concise. Focus on authenticity verification for P2P lending security.
       `;
 
       const contents = [
@@ -180,7 +180,7 @@ export class GeminiAI {
       const mimeType = file.type;
 
       const prompt = `
-        Analyze this medical prescription image and verify its authenticity.
+        Analyze this medical prescription image and verify its authenticity for Vibe P2P lending platform.
         
         Please examine:
         1. Doctor's signature and stamp
@@ -214,7 +214,7 @@ export class GeminiAI {
           "details": "detailed explanation"
         }
         
-        Focus on medical authenticity and prescription validity.
+        Focus on medical authenticity and prescription validity for student medical loan verification.
       `;
 
       const contents = [
@@ -274,35 +274,44 @@ export class GeminiAI {
   async chatWithBot(message: string, conversationHistory: Array<{role: string, content: string}> = []): Promise<string> {
     try {
       const systemPrompt = `
-        You are LendConnect AI Assistant, a helpful chatbot for a peer-to-peer lending platform for students.
+        You are Vibe AI Assistant, a helpful chatbot for Vibe - a peer-to-peer lending platform for students.
+        
+        Platform Info:
+        - Name: Vibe
+        - Tagline: "Lend, Borrow, Connect – Vibe!"
+        - Purpose: P2P lending platform connecting students globally
         
         Your role:
-        - Help users understand how P2P lending works
+        - Help users understand how P2P lending works on Vibe
         - Guide them through loan posting and funding processes
-        - Explain verification requirements
+        - Explain verification requirements and AI-powered features
         - Provide information about interest rates, repayment terms
         - Assist with accessibility features and voice navigation
         - Answer questions about blockchain security and Algorand integration
         - Help with account verification and document upload
+        - Explain Gemini AI verification features
         
         Guidelines:
-        - Be friendly, helpful, and professional
+        - Be friendly, helpful, and use "vibe" language naturally
         - Keep responses concise but informative
         - Always prioritize user safety and financial responsibility
         - Mention that P2P lending involves risks
         - Encourage users to read terms and conditions
         - Support multiple languages (English, Hindi, Hinglish, Bengali, Spanish, Chinese)
         - Be sensitive to financial difficulties students may face
+        - Use encouraging language like "Let's vibe together" or "Ready to help you vibe"
         
         Platform features to mention:
         - Voice navigation for accessibility
-        - Blockchain-secured transactions
-        - AI-powered document verification
+        - Blockchain-secured transactions on Algorand
+        - Gemini AI-powered document verification
         - Multi-language support
         - Medical prescription verification for medical loans
         - Government ID verification for security
+        - Real-time risk assessment
+        - 24/7 AI chatbot support
         
-        Current conversation context: Student lending platform assistance
+        Current conversation context: Student lending platform assistance on Vibe
       `;
 
       // Build conversation history
@@ -325,10 +334,10 @@ export class GeminiAI {
       });
 
       const response = await this.makeRequest(contents);
-      return response || "I'm sorry, I couldn't process your request right now. Please try again.";
+      return response || "I'm sorry, I couldn't process your request right now. Please try again and let's keep the vibe going!";
     } catch (error) {
       console.error('Chatbot request failed:', error);
-      return "I'm experiencing technical difficulties. Please try again later or contact support.";
+      return "I'm experiencing technical difficulties. Please try again later or contact our support team. Don't worry, we'll get back to vibing soon!";
     }
   }
 
@@ -341,7 +350,7 @@ export class GeminiAI {
   }> {
     try {
       const prompt = `
-        Analyze this loan request for risk assessment:
+        Analyze this loan request for risk assessment on Vibe P2P lending platform:
         
         Loan Details:
         - Amount: ${loanData.amount}
@@ -365,6 +374,8 @@ export class GeminiAI {
           "positiveFactors": ["list of positive factors"],
           "analysis": "detailed risk analysis"
         }
+        
+        Consider this is for student lending on Vibe platform.
       `;
 
       const contents = [

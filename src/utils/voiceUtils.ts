@@ -40,8 +40,10 @@ export class VoiceNavigationManager {
       'open dashboard': () => window.location.hash = '#/dashboard',
       'view profile': () => window.location.hash = '#/profile',
       'post loan': () => window.location.hash = '#/post-loan',
-      'help': () => this.speak('Voice commands available: go home, open dashboard, view profile, post loan, stop listening'),
-      'stop listening': () => this.stopListening()
+      'help': () => this.speak('Voice commands available: go home, open dashboard, view profile, post loan, stop listening. Welcome to Vibe!'),
+      'stop listening': () => this.stopListening(),
+      'start vibe': () => this.speak('Welcome to Vibe! Ready to lend, borrow, and connect?'),
+      'what is vibe': () => this.speak('Vibe is your P2P lending platform. Lend, Borrow, Connect – Vibe!')
     };
 
     const matchedCommand = Object.keys(commands).find(cmd => 
@@ -50,9 +52,9 @@ export class VoiceNavigationManager {
 
     if (matchedCommand) {
       commands[matchedCommand as keyof typeof commands]();
-      this.speak(`Navigating to ${matchedCommand}`);
+      this.speak(`Navigating to ${matchedCommand}. Let's keep the vibe going!`);
     } else {
-      this.speak('Command not recognized. Say "help" for available commands.');
+      this.speak('Command not recognized. Say "help" for available commands, or just vibe with us!');
     }
   }
 
@@ -73,7 +75,7 @@ export class VoiceNavigationManager {
 
     this.recognition.start();
     this.isListening = true;
-    this.speak('Voice navigation activated. Say "help" for commands.');
+    this.speak('Voice navigation activated on Vibe. Say "help" for commands. Ready to vibe together!');
   }
 
   stopListening() {
@@ -81,7 +83,7 @@ export class VoiceNavigationManager {
 
     this.recognition.stop();
     this.isListening = false;
-    this.speak('Voice navigation deactivated.');
+    this.speak('Voice navigation deactivated. Thanks for vibing with us!');
   }
 
   isActive() {

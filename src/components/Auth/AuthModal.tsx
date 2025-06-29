@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { X, Mail, Lock, User, Eye, EyeOff } from 'lucide-react'
+import { X, Mail, Lock, User, Eye, EyeOff, Zap } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../../hooks/useAuth'
 import toast from 'react-hot-toast'
@@ -27,11 +27,11 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 's
       if (mode === 'signup') {
         const { error } = await signUp(email, password, name)
         if (error) throw error
-        toast.success('Account created! Please check your email to verify.')
+        toast.success('Welcome to Vibe! Please check your email to verify.')
       } else {
         const { error } = await signIn(email, password)
         if (error) throw error
-        toast.success('Welcome back!')
+        toast.success('Welcome back to Vibe!')
         onClose()
       }
     } catch (error: any) {
@@ -71,13 +71,21 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 's
             </button>
 
             <div className="text-center mb-6">
+              <div className="flex items-center justify-center space-x-2 mb-4">
+                <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-teal-500 rounded-xl flex items-center justify-center">
+                  <Zap className="text-white" size={20} />
+                </div>
+                <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-teal-600 bg-clip-text text-transparent">
+                  Vibe
+                </span>
+              </div>
               <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                {mode === 'signin' ? 'Welcome Back' : 'Create Account'}
+                {mode === 'signin' ? 'Welcome Back' : 'Join the Vibe'}
               </h2>
               <p className="text-gray-600">
                 {mode === 'signin' 
-                  ? 'Sign in to your LendConnect account' 
-                  : 'Join the LendConnect community'
+                  ? 'Sign in to your Vibe account' 
+                  : 'Start lending, borrowing, and connecting!'
                 }
               </p>
             </div>
@@ -148,25 +156,25 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 's
                 disabled={loading}
                 className="w-full bg-gradient-to-r from-blue-500 to-teal-500 text-white py-2 rounded-lg font-medium hover:from-blue-600 hover:to-teal-600 transition-all duration-200 disabled:opacity-50"
               >
-                {loading ? 'Processing...' : (mode === 'signin' ? 'Sign In' : 'Create Account')}
+                {loading ? 'Processing...' : (mode === 'signin' ? 'Sign In' : 'Join Vibe')}
               </button>
             </form>
 
             <div className="mt-6 text-center">
               <p className="text-gray-600">
-                {mode === 'signin' ? "Don't have an account?" : "Already have an account?"}
+                {mode === 'signin' ? "Don't have an account?" : "Already vibing with us?"}
                 <button
                   onClick={switchMode}
                   className="ml-1 text-blue-600 hover:text-blue-700 font-medium"
                 >
-                  {mode === 'signin' ? 'Sign up' : 'Sign in'}
+                  {mode === 'signin' ? 'Join Vibe' : 'Sign in'}
                 </button>
               </p>
             </div>
 
             {mode === 'signup' && (
               <div className="mt-4 text-xs text-gray-500 text-center">
-                By creating an account, you agree to our Terms of Service and Privacy Policy.
+                By joining Vibe, you agree to our Terms of Service and Privacy Policy.
                 P2P lending involves risks. Please assess loan viability carefully.
               </div>
             )}
