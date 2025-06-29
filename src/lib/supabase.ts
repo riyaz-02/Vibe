@@ -22,38 +22,51 @@ if (!hasValidConfig) {
   console.log('🎯 Current status: Running in demo mode with mock data')
 }
 
-// Only create client if we have valid environment variables
+// Create a single Supabase client instance
 export const supabase = hasValidConfig 
   ? createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         autoRefreshToken: true,
         persistSession: true,
-        detectSessionInUrl: true
+        detectSessionInUrl: true,
+        flowType: 'pkce'
       },
       realtime: {
         params: {
           eventsPerSecond: 2
         }
+      },
+      global: {
+        headers: {
+          'x-client-info': 'vibe-p2p-platform'
+        }
       }
     })
   : null
 
-// Test connection only if client exists and we're not in demo mode
+// Test connection only once when module loads
 if (supabase && hasValidConfig) {
-  // Test connection with a simple query
-  supabase.from('profiles').select('count', { count: 'exact', head: true })
-    .then(({ error, count }) => {
+  let connectionTested = false
+  
+  const testConnection = async () => {
+    if (connectionTested) return
+    connectionTested = true
+    
+    try {
+      const { error } = await supabase.from('profiles').select('count', { count: 'exact', head: true })
       if (error) {
         console.error('❌ Supabase connection test failed:', error.message)
         console.log('💡 Check your database setup and RLS policies')
       } else {
         console.log('✅ Supabase connected successfully')
-        console.log(`📊 Database ready (${count || 0} profiles)`)
       }
-    })
-    .catch(err => {
+    } catch (err: any) {
       console.error('❌ Supabase connection error:', err.message)
-    })
+    }
+  }
+  
+  // Test connection with a delay to avoid blocking
+  setTimeout(testConnection, 1000)
 }
 
 // Database types
@@ -71,6 +84,8 @@ export interface Database {
           language: string
           created_at: string
           updated_at: string
+          identity_verified: boolean
+          identity_verified_at?: string
         }
         Insert: {
           id: string
@@ -80,6 +95,7 @@ export interface Database {
           is_verified?: boolean
           phone?: string
           language?: string
+          identity_verified?: boolean
         }
         Update: {
           name?: string
@@ -88,6 +104,8 @@ export interface Database {
           is_verified?: boolean
           phone?: string
           language?: string
+          identity_verified?: boolean
+          identity_verified_at?: string
         }
       }
       loan_requests: {
@@ -168,6 +186,32 @@ export interface Database {
         }
         Update: {
           is_read?: boolean
+        }
+      }
+      document_verifications: {
+        Row: {
+          id: string
+          user_id: string
+          document_type: string
+          verification_status: string
+          confidence_score: number
+          extracted_data?: any
+          verified_at?: string
+          created_at: string
+        }
+        Insert: {
+          user_id: string
+          document_type: string
+          verification_status: string
+          confidence_score?: number
+          extracted_data?: any
+          verified_at?: string
+        }
+        Update: {
+          verification_status?: string
+          confidence_score?: number
+          extracted_data?: any
+          verified_at?: string
         }
       }
     }

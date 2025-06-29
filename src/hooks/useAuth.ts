@@ -10,7 +10,7 @@ export function useAuth() {
 
   useEffect(() => {
     let mounted = true
-    let timeoutId: NodeJS.Timeout | null = null
+    let initializationComplete = false
 
     const initializeAuth = async () => {
       try {
@@ -22,50 +22,27 @@ export function useAuth() {
             setAuthenticated(false)
             setCurrentUser(null)
             setLoading(false)
+            initializationComplete = true
           }
           return
         }
 
         console.log('🔐 Initializing authentication...')
         
-        // Set a much longer timeout to prevent hanging
-        timeoutId = setTimeout(() => {
-          if (mounted) {
-            console.warn('⏰ Auth initialization timeout - continuing in demo mode')
-            setUser(null)
-            setAuthenticated(false)
-            setCurrentUser(null)
-            setLoading(false)
-          }
-        }, 30000) // Increased to 30 seconds
+        // Get initial session with proper error handling
+        const { data: { session }, error } = await supabase.auth.getSession()
 
-        // Get initial session with extended timeout
-        const sessionPromise = supabase.auth.getSession()
-        const { data: { session }, error } = await Promise.race([
-          sessionPromise,
-          new Promise<any>((_, reject) => 
-            setTimeout(() => reject(new Error('Session timeout')), 25000) // Increased to 25 seconds
-          )
-        ])
-
-        // Clear timeout if we get a response
-        if (timeoutId) {
-          clearTimeout(timeoutId)
-          timeoutId = null
-        }
+        if (!mounted) return
 
         if (error) {
           console.error('❌ Session error:', error.message)
-          if (mounted) {
-            setUser(null)
-            setAuthenticated(false)
-            setCurrentUser(null)
-            setLoading(false)
-          }
+          setUser(null)
+          setAuthenticated(false)
+          setCurrentUser(null)
+          setLoading(false)
+          initializationComplete = true
           return
         }
-
-        if (!mounted) return
 
         console.log(session?.user ? '✅ User session found' : '👤 No active session')
         setUser(session?.user ?? null)
@@ -76,26 +53,32 @@ export function useAuth() {
         }
         
         setLoading(false)
+        initializationComplete = true
       } catch (error: any) {
         console.error('❌ Auth initialization failed:', error.message)
         
-        // Clear timeout on error
-        if (timeoutId) {
-          clearTimeout(timeoutId)
-          timeoutId = null
-        }
-        
-        // Continue without authentication
         if (mounted) {
           setUser(null)
           setAuthenticated(false)
           setCurrentUser(null)
           setLoading(false)
+          initializationComplete = true
         }
       }
     }
 
-    // Initialize auth immediately
+    // Set a timeout to prevent hanging
+    const timeoutId = setTimeout(() => {
+      if (!initializationComplete && mounted) {
+        console.warn('⏰ Auth initialization timeout - continuing in demo mode')
+        setUser(null)
+        setAuthenticated(false)
+        setCurrentUser(null)
+        setLoading(false)
+      }
+    }, 10000) // 10 second timeout
+
+    // Initialize auth
     initializeAuth()
 
     // Listen for auth changes only if Supabase client is available
@@ -116,7 +99,9 @@ export function useAuth() {
               setCurrentUser(null)
             }
             
-            setLoading(false)
+            if (initializationComplete) {
+              setLoading(false)
+            }
           }
         )
         subscription = authSubscription
@@ -127,9 +112,7 @@ export function useAuth() {
 
     return () => {
       mounted = false
-      if (timeoutId) {
-        clearTimeout(timeoutId)
-      }
+      clearTimeout(timeoutId)
       if (subscription) {
         subscription.unsubscribe()
       }
@@ -158,7 +141,6 @@ export function useAuth() {
 
       if (error) {
         console.error('❌ Profile fetch error:', error.message)
-        // Create a basic profile if it doesn't exist
         if (error.code === 'PGRST116') {
           console.log('📝 Profile not found - user can create one later')
           return
