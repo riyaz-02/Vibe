@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { LoanRequest } from '../types'
 import { useStore } from '../store/useStore'
 import { useAuth } from './useAuth'
+import { mockLoanRequests } from '../utils/mockData'
 
 export function useLoans() {
   const [loading, setLoading] = useState(true)
@@ -22,6 +23,14 @@ export function useLoans() {
     try {
       console.log('Fetching loans...')
       setLoading(true)
+      
+      // If Supabase is not available, use mock data
+      if (!supabase) {
+        console.log('Using mock loan data (Supabase not available)')
+        setLoanRequests(mockLoanRequests)
+        setLoading(false)
+        return
+      }
       
       const { data, error } = await supabase
         .from('loan_requests')
@@ -61,12 +70,14 @@ export function useLoans() {
 
       if (error) {
         console.error('Supabase error fetching loans:', error)
-        // Don't throw error, just use empty array
-        setLoanRequests([])
+        // Use mock data as fallback
+        console.log('Using mock loan data as fallback')
+        setLoanRequests(mockLoanRequests)
+        setLoading(false)
         return
       }
 
-      console.log('Loans fetched:', data?.length || 0)
+      console.log('Loans fetched from Supabase:', data?.length || 0)
 
       const formattedLoans: LoanRequest[] = (data || []).map((loan: any) => ({
         id: loan.id,
@@ -135,10 +146,18 @@ export function useLoans() {
         shares: (loan.loan_interactions || []).filter((i: any) => i.type === 'share').length
       }))
 
-      setLoanRequests(formattedLoans)
+      // If no data from Supabase, use mock data
+      if (formattedLoans.length === 0) {
+        console.log('No loans in database, using mock data')
+        setLoanRequests(mockLoanRequests)
+      } else {
+        setLoanRequests(formattedLoans)
+      }
     } catch (error) {
       console.error('Error fetching loans:', error)
-      setLoanRequests([]) // Set empty array on error
+      // Use mock data as fallback
+      console.log('Using mock loan data due to error')
+      setLoanRequests(mockLoanRequests)
     } finally {
       setLoading(false)
     }
@@ -156,6 +175,10 @@ export function useLoans() {
     try {
       if (!user) {
         throw new Error('User must be authenticated to create a loan')
+      }
+
+      if (!supabase) {
+        throw new Error('Database service not available. Please check your connection.')
       }
 
       console.log('Creating loan with data:', loanData)
@@ -199,6 +222,10 @@ export function useLoans() {
         throw new Error('User must be authenticated to fund a loan')
       }
 
+      if (!supabase) {
+        throw new Error('Database service not available. Please check your connection.')
+      }
+
       const { data, error } = await supabase
         .from('loan_fundings')
         .insert({
@@ -222,6 +249,10 @@ export function useLoans() {
     try {
       if (!user) {
         throw new Error('User must be authenticated to interact with loans')
+      }
+
+      if (!supabase) {
+        throw new Error('Database service not available. Please check your connection.')
       }
 
       const { data, error } = await supabase

@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast';
 import { useStore } from './store/useStore';
 import { useAuth } from './hooks/useAuth';
 import { voiceManager } from './utils/voiceUtils';
+import { supabase } from './lib/supabase';
 
 // Components
 import Navbar from './components/Layout/Navbar';
@@ -20,6 +21,15 @@ function App() {
   const { loading } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [appError, setAppError] = useState<string | null>(null);
+  const [demoMode, setDemoMode] = useState(false);
+
+  useEffect(() => {
+    // Check if we're in demo mode (no Supabase connection)
+    if (!supabase) {
+      setDemoMode(true);
+      console.log('Running in demo mode - Supabase not configured');
+    }
+  }, []);
 
   useEffect(() => {
     // Manage voice navigation
@@ -67,7 +77,7 @@ function App() {
     );
   }
 
-  // Show loading state with timeout
+  // Show loading state with reduced timeout
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -77,6 +87,11 @@ function App() {
           <p className="text-sm text-gray-500 mt-1">Lend, Borrow, Connect – Vibe!</p>
           <div className="mt-4 text-xs text-gray-400">
             <p>Connecting to secure servers...</p>
+            {demoMode && (
+              <p className="text-orange-500 mt-2">
+                Running in demo mode - some features may be limited
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -86,6 +101,18 @@ function App() {
   return (
     <Router>
       <div className="min-h-screen bg-gray-50 flex flex-col">
+        {/* Demo Mode Banner */}
+        {demoMode && (
+          <div className="bg-orange-100 border-b border-orange-200 px-4 py-2">
+            <div className="max-w-7xl mx-auto">
+              <p className="text-orange-800 text-sm text-center">
+                <strong>Demo Mode:</strong> Running with sample data. 
+                To enable full functionality, please configure your Supabase credentials in the .env file.
+              </p>
+            </div>
+          </div>
+        )}
+        
         <Navbar onAuthClick={() => setShowAuthModal(true)} />
         
         <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">

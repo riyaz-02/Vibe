@@ -10,6 +10,7 @@ export function useAuth() {
 
   useEffect(() => {
     let mounted = true
+    let timeoutId: NodeJS.Timeout
 
     const initializeAuth = async () => {
       try {
@@ -17,7 +18,7 @@ export function useAuth() {
         
         // Check if Supabase client is available
         if (!supabase) {
-          console.error('Supabase client not available - check environment variables')
+          console.warn('Supabase client not available - running in demo mode')
           if (mounted) {
             setUser(null)
             setAuthenticated(false)
@@ -27,20 +28,35 @@ export function useAuth() {
           return
         }
 
-        // Get initial session with timeout - reduced to 10 seconds for faster feedback
-        const sessionPromise = supabase.auth.getSession()
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Session timeout - check Supabase connection')), 10000)
-        )
+        // Set a timeout to prevent hanging
+        timeoutId = setTimeout(() => {
+          if (mounted) {
+            console.warn('Auth initialization timeout - continuing without authentication')
+            setUser(null)
+            setAuthenticated(false)
+            setCurrentUser(null)
+            setLoading(false)
+          }
+        }, 5000) // 5 second timeout
 
-        const { data: { session }, error } = await Promise.race([
-          sessionPromise,
-          timeoutPromise
-        ]) as any
+        // Get initial session
+        const { data: { session }, error } = await supabase.auth.getSession()
+
+        // Clear timeout if we get a response
+        if (timeoutId) {
+          clearTimeout(timeoutId)
+        }
 
         if (error) {
           console.error('Session error:', error)
-          throw error
+          // Don't throw error, just continue without auth
+          if (mounted) {
+            setUser(null)
+            setAuthenticated(false)
+            setCurrentUser(null)
+            setLoading(false)
+          }
+          return
         }
 
         if (!mounted) return
@@ -52,16 +68,19 @@ export function useAuth() {
         if (session?.user) {
           await fetchUserProfile(session.user.id)
         }
+        
+        setLoading(false)
       } catch (error) {
         console.error('Auth initialization failed:', error)
+        // Clear timeout on error
+        if (timeoutId) {
+          clearTimeout(timeoutId)
+        }
         // Continue without authentication
         if (mounted) {
           setUser(null)
           setAuthenticated(false)
           setCurrentUser(null)
-        }
-      } finally {
-        if (mounted) {
           setLoading(false)
         }
       }
@@ -73,28 +92,35 @@ export function useAuth() {
     // Listen for auth changes only if Supabase client is available
     let subscription: any = null
     if (supabase) {
-      const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(
-        async (event, session) => {
-          if (!mounted) return
-          
-          console.log('Auth state changed:', event, !!session?.user)
-          setUser(session?.user ?? null)
-          setAuthenticated(!!session?.user)
-          
-          if (session?.user) {
-            await fetchUserProfile(session.user.id)
-          } else {
-            setCurrentUser(null)
+      try {
+        const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(
+          async (event, session) => {
+            if (!mounted) return
+            
+            console.log('Auth state changed:', event, !!session?.user)
+            setUser(session?.user ?? null)
+            setAuthenticated(!!session?.user)
+            
+            if (session?.user) {
+              await fetchUserProfile(session.user.id)
+            } else {
+              setCurrentUser(null)
+            }
+            
+            setLoading(false)
           }
-          
-          setLoading(false)
-        }
-      )
-      subscription = authSubscription
+        )
+        subscription = authSubscription
+      } catch (error) {
+        console.error('Failed to set up auth listener:', error)
+      }
     }
 
     return () => {
       mounted = false
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+      }
       if (subscription) {
         subscription.unsubscribe()
       }
@@ -128,7 +154,8 @@ export function useAuth() {
           console.log('Profile not found, user can create one later')
           return
         }
-        throw error
+        // Don't throw error, just continue without profile
+        return
       }
 
       if (profile) {
@@ -167,7 +194,7 @@ export function useAuth() {
   const signUp = async (email: string, password: string, name: string) => {
     try {
       if (!supabase) {
-        return { data: null, error: new Error('Supabase client not available') }
+        return { data: null, error: new Error('Authentication service not available. Please check your connection.') }
       }
 
       const { data, error } = await supabase.auth.signUp({
@@ -189,7 +216,7 @@ export function useAuth() {
   const signIn = async (email: string, password: string) => {
     try {
       if (!supabase) {
-        return { data: null, error: new Error('Supabase client not available') }
+        return { data: null, error: new Error('Authentication service not available. Please check your connection.') }
       }
 
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -206,7 +233,7 @@ export function useAuth() {
   const signOut = async () => {
     try {
       if (!supabase) {
-        return { error: new Error('Supabase client not available') }
+        return { error: new Error('Authentication service not available') }
       }
 
       const { error } = await supabase.auth.signOut()
