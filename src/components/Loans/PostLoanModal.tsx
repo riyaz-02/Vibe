@@ -1,11 +1,12 @@
 import React, { useState, useRef } from 'react';
-import { X, Upload, Camera, FileText, Shield, CheckCircle, AlertCircle, Eye, DollarSign } from 'lucide-react';
+import { X, Upload, Camera, FileText, Shield, CheckCircle, AlertCircle, Eye, DollarSign, Bot } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../hooks/useAuth';
 import { useLoans } from '../../hooks/useLoans';
 import { useTranslation } from '../../utils/translations';
 import { useStore } from '../../store/useStore';
-import { verifyGovernmentId, verifyMedicalPrescription } from '../../utils/verificationUtils';
+import { verifyGovernmentId, verifyMedicalPrescription, assessLoanRisk } from '../../utils/verificationUtils';
+import { geminiAI } from '../../utils/geminiAI';
 import toast from 'react-hot-toast';
 
 interface PostLoanModalProps {
@@ -16,7 +17,7 @@ interface PostLoanModalProps {
 const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
   const { user } = useAuth();
   const { createLoan } = useLoans();
-  const { currentLanguage } = useStore();
+  const { currentLanguage, currentUser } = useStore();
   const t = useTranslation(currentLanguage);
   
   const [step, setStep] = useState(1);
@@ -26,6 +27,7 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
     medical: false,
     documents: false
   });
+  const [riskAssessment, setRiskAssessment] = useState<any>(null);
 
   // Form data
   const [formData, setFormData] = useState({
@@ -80,7 +82,7 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
         setFiles(prev => ({ ...prev, identityDocument: file }));
         
         if (verification.isValid) {
-          toast.success('Government ID verified successfully!');
+          toast.success(`Government ID verified successfully! (${Math.round(verification.confidence * 100)}% confidence)`);
         } else {
           toast.error('ID verification failed. Please upload a clear government ID.');
         }
@@ -90,7 +92,7 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
         setFiles(prev => ({ ...prev, medicalPrescription: file }));
         
         if (verification.isValid) {
-          toast.success('Medical prescription verified!');
+          toast.success(`Medical prescription verified! (${Math.round(verification.confidence * 100)}% confidence)`);
         } else {
           toast.error('Prescription verification failed. Please upload a valid prescription.');
         }
@@ -103,6 +105,20 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
       }
     } catch (error) {
       toast.error('File upload failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const performRiskAssessment = async () => {
+    if (!formData.amount || !formData.interestRate || !formData.tenureDays) return;
+
+    try {
+      setLoading(true);
+      const assessment = await assessLoanRisk(formData, currentUser);
+      setRiskAssessment(assessment);
+    } catch (error) {
+      console.error('Risk assessment failed:', error);
     } finally {
       setLoading(false);
     }
@@ -134,9 +150,6 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
     setLoading(true);
 
     try {
-      // Upload files and get URLs (in a real app, you'd upload to Supabase Storage)
-      const imageUrls: string[] = [];
-      
       // Create loan request
       const { error } = await createLoan({
         title: formData.title,
@@ -145,12 +158,12 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
         interestRate: parseFloat(formData.interestRate),
         tenureDays: parseInt(formData.tenureDays),
         purpose: formData.purpose,
-        images: imageUrls
+        images: [] // In a real app, you'd upload to Supabase Storage
       });
 
       if (error) throw error;
 
-      toast.success('Loan request posted successfully!');
+      toast.success('Loan request posted successfully! 🎉');
       onClose();
       resetForm();
     } catch (error: any) {
@@ -181,9 +194,16 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
       medical: false,
       documents: false
     });
+    setRiskAssessment(null);
   };
 
-  const nextStep = () => setStep(prev => Math.min(prev + 1, 4));
+  const nextStep = () => {
+    if (step === 1) {
+      performRiskAssessment();
+    }
+    setStep(prev => Math.min(prev + 1, 4));
+  };
+  
   const prevStep = () => setStep(prev => Math.max(prev - 1, 1));
 
   const selectedPurpose = purposes.find(p => p.value === formData.purpose);
@@ -204,7 +224,7 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900">Post Loan Request</h2>
-                  <p className="text-gray-600 mt-1">Step {step} of 4</p>
+                  <p className="text-gray-600 mt-1">Step {step} of 4 • AI-Powered Verification</p>
                 </div>
                 <button
                   onClick={onClose}
@@ -275,7 +295,10 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
                                 <div>
                                   <div className="font-medium text-sm">{purpose.label}</div>
                                   {purpose.requiresVerification && (
-                                    <div className="text-xs text-orange-600">Verification required</div>
+                                    <div className="text-xs text-orange-600 flex items-center space-x-1">
+                                      <Bot size={10} />
+                                      <span>AI verification required</span>
+                                    </div>
                                   )}
                                 </div>
                               </div>
@@ -356,6 +379,38 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
                           ))}
                         </div>
                       </div>
+
+                      {/* AI Risk Assessment Preview */}
+                      {riskAssessment && (
+                        <div className={`p-4 rounded-lg border-2 ${
+                          riskAssessment.riskLevel === 'low' ? 'bg-green-50 border-green-200' :
+                          riskAssessment.riskLevel === 'medium' ? 'bg-yellow-50 border-yellow-200' :
+                          'bg-red-50 border-red-200'
+                        }`}>
+                          <div className="flex items-center space-x-2 mb-2">
+                            <Bot className={
+                              riskAssessment.riskLevel === 'low' ? 'text-green-600' :
+                              riskAssessment.riskLevel === 'medium' ? 'text-yellow-600' :
+                              'text-red-600'
+                            } size={16} />
+                            <h4 className="font-medium">AI Risk Assessment</h4>
+                          </div>
+                          <p className="text-sm">
+                            Risk Level: <strong className="capitalize">{riskAssessment.riskLevel}</strong> 
+                            ({riskAssessment.score}/100)
+                          </p>
+                          {riskAssessment.recommendations.length > 0 && (
+                            <div className="mt-2">
+                              <p className="text-xs font-medium">Recommendations:</p>
+                              <ul className="text-xs list-disc list-inside">
+                                {riskAssessment.recommendations.slice(0, 2).map((rec: string, index: number) => (
+                                  <li key={index}>{rec}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </motion.div>
@@ -407,7 +462,7 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
                 </motion.div>
               )}
 
-              {/* Step 3: Verification & Documents */}
+              {/* Step 3: AI Verification & Documents */}
               {step === 3 && (
                 <motion.div
                   initial={{ opacity: 0, x: 20 }}
@@ -415,14 +470,16 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
                   className="space-y-6"
                 >
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Verification & Documents</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                      AI-Powered Verification & Documents
+                    </h3>
                     
                     {/* Identity Verification */}
                     <div className="border border-gray-200 rounded-lg p-4 mb-4">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center space-x-2">
                           <Shield className="text-blue-500" size={20} />
-                          <h4 className="font-medium text-gray-900">Identity Verification</h4>
+                          <h4 className="font-medium text-gray-900">AI Identity Verification</h4>
                           {requiresVerification && <span className="text-red-500 text-sm">*Required</span>}
                         </div>
                         {verificationStatus.identity && (
@@ -431,7 +488,7 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
                       </div>
                       
                       <p className="text-sm text-gray-600 mb-3">
-                        Upload a government-issued ID (Aadhaar, PAN, Passport, Driving License)
+                        Upload a government-issued ID. Our AI will verify authenticity using Gemini Vision API.
                       </p>
                       
                       <input
@@ -453,6 +510,7 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
                       >
                         <Upload size={16} />
                         <span>{files.identityDocument ? 'Change Document' : 'Upload ID Document'}</span>
+                        {loading && <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>}
                       </button>
                       
                       {files.identityDocument && (
@@ -468,7 +526,7 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center space-x-2">
                             <FileText className="text-red-500" size={20} />
-                            <h4 className="font-medium text-gray-900">Medical Prescription</h4>
+                            <h4 className="font-medium text-gray-900">AI Prescription Verification</h4>
                             <span className="text-red-500 text-sm">*Required</span>
                           </div>
                           {verificationStatus.medical && (
@@ -477,7 +535,7 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
                         </div>
                         
                         <p className="text-sm text-gray-600 mb-3">
-                          Upload a valid medical prescription or doctor's note
+                          Upload a valid medical prescription. Our AI will verify doctor details and medications.
                         </p>
                         
                         <input
@@ -499,6 +557,7 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
                         >
                           <Upload size={16} />
                           <span>{files.medicalPrescription ? 'Change Prescription' : 'Upload Prescription'}</span>
+                          {loading && <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>}
                         </button>
                         
                         {files.medicalPrescription && (
@@ -557,7 +616,7 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
                     {loading && (
                       <div className="flex items-center justify-center py-4">
                         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-                        <span className="ml-2 text-gray-600">Verifying documents...</span>
+                        <span className="ml-2 text-gray-600">AI is analyzing your documents...</span>
                       </div>
                     )}
                   </div>
@@ -608,9 +667,12 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
                       </div>
                     </div>
 
-                    {/* Verification Status */}
+                    {/* AI Verification Status */}
                     <div className="border border-gray-200 rounded-lg p-4">
-                      <h4 className="font-medium text-gray-900 mb-3">Verification Status</h4>
+                      <h4 className="font-medium text-gray-900 mb-3 flex items-center space-x-2">
+                        <Bot className="text-blue-500" size={16} />
+                        <span>AI Verification Status</span>
+                      </h4>
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
                           <span className="text-sm">Identity Verification</span>
@@ -635,6 +697,38 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
                       </div>
                     </div>
 
+                    {/* Final Risk Assessment */}
+                    {riskAssessment && (
+                      <div className={`border-2 rounded-lg p-4 ${
+                        riskAssessment.riskLevel === 'low' ? 'bg-green-50 border-green-200' :
+                        riskAssessment.riskLevel === 'medium' ? 'bg-yellow-50 border-yellow-200' :
+                        'bg-red-50 border-red-200'
+                      }`}>
+                        <h4 className="font-medium mb-2 flex items-center space-x-2">
+                          <Bot className={
+                            riskAssessment.riskLevel === 'low' ? 'text-green-600' :
+                            riskAssessment.riskLevel === 'medium' ? 'text-yellow-600' :
+                            'text-red-600'
+                          } size={16} />
+                          <span>Final AI Risk Assessment</span>
+                        </h4>
+                        <p className="text-sm mb-2">
+                          Risk Level: <strong className="capitalize">{riskAssessment.riskLevel}</strong> 
+                          ({riskAssessment.score}/100)
+                        </p>
+                        {riskAssessment.recommendations.length > 0 && (
+                          <div>
+                            <p className="text-xs font-medium mb-1">Lender Recommendations:</p>
+                            <ul className="text-xs list-disc list-inside space-y-1">
+                              {riskAssessment.recommendations.map((rec: string, index: number) => (
+                                <li key={index}>{rec}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {/* Terms and Conditions */}
                     <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                       <h4 className="font-medium text-yellow-800 mb-2">⚠️ Important Terms</h4>
@@ -644,6 +738,7 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
                         <li>• Late repayment may affect your credit score and future borrowing</li>
                         <li>• All transactions are secured on the Algorand blockchain</li>
                         <li>• False information may result in account suspension</li>
+                        <li>• AI verification results are stored securely and encrypted</li>
                       </ul>
                     </div>
                   </div>
@@ -670,9 +765,10 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
                   <button
                     onClick={handleSubmit}
                     disabled={loading || (requiresVerification && !verificationStatus.identity) || (formData.purpose === 'medical' && !verificationStatus.medical)}
-                    className="px-6 py-2 bg-gradient-to-r from-blue-500 to-teal-500 text-white rounded-lg hover:from-blue-600 hover:to-teal-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-6 py-2 bg-gradient-to-r from-blue-500 to-teal-500 text-white rounded-lg hover:from-blue-600 hover:to-teal-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                   >
-                    {loading ? 'Submitting...' : 'Submit Loan Request'}
+                    {loading && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>}
+                    <span>{loading ? 'Submitting...' : 'Submit Loan Request'}</span>
                   </button>
                 )}
               </div>

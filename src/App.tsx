@@ -13,6 +13,7 @@ import Dashboard from './components/Dashboard/Dashboard';
 import Profile from './components/Profile/Profile';
 import Help from './components/Help/Help';
 import AuthModal from './components/Auth/AuthModal';
+import ChatBot from './components/Chat/ChatBot';
 
 function App() {
   const { isVoiceNavigationActive, currentLanguage } = useStore();
@@ -65,6 +66,9 @@ function App() {
           isOpen={showAuthModal} 
           onClose={() => setShowAuthModal(false)} 
         />
+        
+        {/* AI Chatbot */}
+        <ChatBot />
         
         {/* Toast Notifications */}
         <Toaster

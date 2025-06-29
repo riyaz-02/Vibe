@@ -1,4 +1,5 @@
-// Verification utilities for government ID and medical prescriptions
+// Enhanced verification utilities using Gemini AI
+import { geminiAI } from './geminiAI';
 
 export interface VerificationResult {
   isValid: boolean;
@@ -7,105 +8,91 @@ export interface VerificationResult {
   extractedData?: any;
 }
 
-// Mock AI-powered government ID verification
+// AI-powered government ID verification using Gemini
 export const verifyGovernmentId = async (file: File): Promise<VerificationResult> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      // Simulate AI verification process
-      const fileName = file.name.toLowerCase();
-      const fileSize = file.size;
-      
-      // Basic validation
-      if (fileSize > 10 * 1024 * 1024) { // 10MB limit
-        resolve({
-          isValid: false,
-          confidence: 0,
-          details: 'File size too large. Please upload a file smaller than 10MB.'
-        });
-        return;
-      }
+  try {
+    // Basic validation first
+    if (file.size > 10 * 1024 * 1024) { // 10MB limit
+      return {
+        isValid: false,
+        confidence: 0,
+        details: 'File size too large. Please upload a file smaller than 10MB.'
+      };
+    }
 
-      // Simulate OCR and validation
-      const isValidFormat = /\.(jpg|jpeg|png|pdf)$/i.test(fileName);
-      if (!isValidFormat) {
-        resolve({
-          isValid: false,
-          confidence: 0,
-          details: 'Invalid file format. Please upload JPG, PNG, or PDF files only.'
-        });
-        return;
-      }
+    const fileName = file.name.toLowerCase();
+    const isValidFormat = /\.(jpg|jpeg|png|pdf)$/i.test(fileName);
+    if (!isValidFormat) {
+      return {
+        isValid: false,
+        confidence: 0,
+        details: 'Invalid file format. Please upload JPG, PNG, or PDF files only.'
+      };
+    }
 
-      // Mock AI verification (in real implementation, this would call Gemini Vision API)
-      const mockConfidence = Math.random() * 0.3 + 0.7; // 70-100% confidence
-      const isValid = mockConfidence > 0.75;
-
-      resolve({
-        isValid,
-        confidence: mockConfidence,
-        details: isValid 
-          ? 'Government ID verified successfully. Document appears authentic.'
-          : 'ID verification failed. Document may be unclear or invalid.',
-        extractedData: isValid ? {
-          documentType: 'Aadhaar Card',
-          name: 'John Doe',
-          idNumber: 'XXXX-XXXX-1234'
-        } : null
-      });
-    }, 2000); // Simulate processing time
-  });
+    // Use Gemini AI for advanced verification
+    const result = await geminiAI.verifyGovernmentID(file);
+    
+    return {
+      isValid: result.isValid,
+      confidence: result.confidence,
+      details: result.details,
+      extractedData: result.extractedData
+    };
+  } catch (error) {
+    console.error('Government ID verification failed:', error);
+    return {
+      isValid: false,
+      confidence: 0,
+      details: 'Verification failed due to technical error. Please try again.',
+      extractedData: null
+    };
+  }
 };
 
-// Mock AI-powered medical prescription verification
+// AI-powered medical prescription verification using Gemini
 export const verifyMedicalPrescription = async (file: File): Promise<VerificationResult> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const fileName = file.name.toLowerCase();
-      const fileSize = file.size;
-      
-      // Basic validation
-      if (fileSize > 10 * 1024 * 1024) {
-        resolve({
-          isValid: false,
-          confidence: 0,
-          details: 'File size too large. Please upload a file smaller than 10MB.'
-        });
-        return;
-      }
+  try {
+    // Basic validation
+    if (file.size > 10 * 1024 * 1024) {
+      return {
+        isValid: false,
+        confidence: 0,
+        details: 'File size too large. Please upload a file smaller than 10MB.'
+      };
+    }
 
-      const isValidFormat = /\.(jpg|jpeg|png|pdf)$/i.test(fileName);
-      if (!isValidFormat) {
-        resolve({
-          isValid: false,
-          confidence: 0,
-          details: 'Invalid file format. Please upload JPG, PNG, or PDF files only.'
-        });
-        return;
-      }
+    const fileName = file.name.toLowerCase();
+    const isValidFormat = /\.(jpg|jpeg|png|pdf)$/i.test(fileName);
+    if (!isValidFormat) {
+      return {
+        isValid: false,
+        confidence: 0,
+        details: 'Invalid file format. Please upload JPG, PNG, or PDF files only.'
+      };
+    }
 
-      // Mock medical prescription verification using Gemini Vision API
-      const mockConfidence = Math.random() * 0.4 + 0.6; // 60-100% confidence
-      const isValid = mockConfidence > 0.7;
-
-      resolve({
-        isValid,
-        confidence: mockConfidence,
-        details: isValid 
-          ? 'Medical prescription verified. Valid doctor prescription detected.'
-          : 'Prescription verification failed. Document may not be a valid medical prescription.',
-        extractedData: isValid ? {
-          doctorName: 'Dr. Smith',
-          hospitalName: 'City Hospital',
-          medications: ['Medicine A', 'Medicine B'],
-          date: new Date().toISOString().split('T')[0],
-          patientName: 'Patient Name'
-        } : null
-      });
-    }, 3000); // Simulate processing time
-  });
+    // Use Gemini AI for prescription verification
+    const result = await geminiAI.verifyMedicalPrescription(file);
+    
+    return {
+      isValid: result.isValid,
+      confidence: result.confidence,
+      details: result.details,
+      extractedData: result.extractedData
+    };
+  } catch (error) {
+    console.error('Medical prescription verification failed:', error);
+    return {
+      isValid: false,
+      confidence: 0,
+      details: 'Verification failed due to technical error. Please try again.',
+      extractedData: null
+    };
+  }
 };
 
-// Validate loan request data
+// Enhanced loan request validation
 export const validateLoanRequest = (data: any): { isValid: boolean; errors: string[] } => {
   const errors: string[] = [];
 
@@ -157,81 +144,113 @@ export const calculateLoanMetrics = (amount: number, interestRate: number, tenur
   };
 };
 
-// Risk assessment for loan requests
-export const assessLoanRisk = (data: any, userProfile: any): { riskLevel: 'low' | 'medium' | 'high'; score: number; factors: string[] } => {
-  let score = 50; // Base score
-  const factors: string[] = [];
+// AI-powered risk assessment using Gemini
+export const assessLoanRisk = async (data: any, userProfile: any): Promise<{ 
+  riskLevel: 'low' | 'medium' | 'high'; 
+  score: number; 
+  factors: string[];
+  recommendations: string[];
+  concerns: string[];
+}> => {
+  try {
+    const result = await geminiAI.analyzeLoanRisk(data, userProfile);
+    
+    return {
+      riskLevel: result.riskLevel,
+      score: result.score,
+      factors: [], // Legacy field
+      recommendations: result.recommendations,
+      concerns: result.concerns
+    };
+  } catch (error) {
+    console.error('AI risk assessment failed, using fallback:', error);
+    
+    // Fallback to basic risk assessment
+    let score = 50;
+    const factors: string[] = [];
+    const recommendations: string[] = [];
+    const concerns: string[] = [];
 
-  // User verification status
-  if (userProfile?.isVerified) {
-    score += 15;
-    factors.push('Verified user profile');
+    // Basic scoring logic
+    if (userProfile?.isVerified) {
+      score += 15;
+      factors.push('Verified user profile');
+    } else {
+      score -= 10;
+      concerns.push('Unverified user profile');
+    }
+
+    const amount = parseFloat(data.amount);
+    if (amount > 50000) {
+      score -= 15;
+      concerns.push('High loan amount');
+    } else if (amount < 5000) {
+      score += 10;
+      factors.push('Reasonable loan amount');
+    }
+
+    const interestRate = parseFloat(data.interestRate);
+    if (interestRate > 15) {
+      score -= 10;
+      concerns.push('High interest rate offered');
+    } else if (interestRate < 5) {
+      score += 5;
+      factors.push('Competitive interest rate');
+    }
+
+    if (userProfile?.stats?.successfulRepayments > 0) {
+      score += 20;
+      factors.push('Positive repayment history');
+    }
+
+    recommendations.push('Verify borrower identity');
+    recommendations.push('Check repayment history');
+    recommendations.push('Consider loan purpose and urgency');
+
+    let riskLevel: 'low' | 'medium' | 'high';
+    if (score >= 70) {
+      riskLevel = 'low';
+    } else if (score >= 40) {
+      riskLevel = 'medium';
+    } else {
+      riskLevel = 'high';
+    }
+
+    return {
+      riskLevel,
+      score: Math.max(0, Math.min(100, score)),
+      factors,
+      recommendations,
+      concerns
+    };
+  }
+};
+
+// Document quality assessment
+export const assessDocumentQuality = (file: File): { quality: 'good' | 'fair' | 'poor'; suggestions: string[] } => {
+  const suggestions: string[] = [];
+  let quality: 'good' | 'fair' | 'poor' = 'good';
+
+  // File size assessment
+  if (file.size < 100 * 1024) { // Less than 100KB
+    quality = 'poor';
+    suggestions.push('Image appears to be low resolution. Please upload a clearer image.');
+  } else if (file.size < 500 * 1024) { // Less than 500KB
+    quality = 'fair';
+    suggestions.push('Consider uploading a higher resolution image for better verification.');
+  }
+
+  // File type assessment
+  if (file.type === 'image/jpeg' || file.type === 'image/jpg') {
+    // JPEG is good for photos
+  } else if (file.type === 'image/png') {
+    // PNG is good for documents
+  } else if (file.type === 'application/pdf') {
+    suggestions.push('PDF detected. Ensure the document is clearly visible and not password protected.');
   } else {
-    score -= 10;
-    factors.push('Unverified user profile');
+    quality = 'poor';
+    suggestions.push('Unsupported file format. Please use JPG, PNG, or PDF.');
   }
 
-  // Loan amount relative to user history
-  const amount = parseFloat(data.amount);
-  if (amount > 50000) {
-    score -= 15;
-    factors.push('High loan amount');
-  } else if (amount < 5000) {
-    score += 10;
-    factors.push('Reasonable loan amount');
-  }
-
-  // Interest rate assessment
-  const interestRate = parseFloat(data.interestRate);
-  if (interestRate > 15) {
-    score -= 10;
-    factors.push('High interest rate offered');
-  } else if (interestRate < 5) {
-    score += 5;
-    factors.push('Competitive interest rate');
-  }
-
-  // Purpose assessment
-  const lowRiskPurposes = ['education', 'textbooks'];
-  const highRiskPurposes = ['emergency', 'other'];
-  
-  if (lowRiskPurposes.includes(data.purpose)) {
-    score += 10;
-    factors.push('Low-risk loan purpose');
-  } else if (highRiskPurposes.includes(data.purpose)) {
-    score -= 5;
-    factors.push('Higher-risk loan purpose');
-  }
-
-  // Tenure assessment
-  const tenure = parseInt(data.tenureDays);
-  if (tenure > 180) {
-    score -= 10;
-    factors.push('Long repayment period');
-  } else if (tenure < 30) {
-    score += 5;
-    factors.push('Short repayment period');
-  }
-
-  // User's repayment history
-  if (userProfile?.stats?.successfulRepayments > 0) {
-    score += 20;
-    factors.push('Positive repayment history');
-  }
-
-  // Determine risk level
-  let riskLevel: 'low' | 'medium' | 'high';
-  if (score >= 70) {
-    riskLevel = 'low';
-  } else if (score >= 40) {
-    riskLevel = 'medium';
-  } else {
-    riskLevel = 'high';
-  }
-
-  return {
-    riskLevel,
-    score: Math.max(0, Math.min(100, score)),
-    factors
-  };
+  return { quality, suggestions };
 };
