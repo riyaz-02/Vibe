@@ -28,7 +28,7 @@ export function useAuth() {
 
         console.log('🔐 Initializing authentication...')
         
-        // Set a reasonable timeout to prevent hanging
+        // Set a much longer timeout to prevent hanging
         timeoutId = setTimeout(() => {
           if (mounted) {
             console.warn('⏰ Auth initialization timeout - continuing in demo mode')
@@ -37,14 +37,14 @@ export function useAuth() {
             setCurrentUser(null)
             setLoading(false)
           }
-        }, 6000) // Increased to 6 seconds
+        }, 30000) // Increased to 30 seconds
 
-        // Get initial session with timeout
+        // Get initial session with extended timeout
         const sessionPromise = supabase.auth.getSession()
         const { data: { session }, error } = await Promise.race([
           sessionPromise,
           new Promise<any>((_, reject) => 
-            setTimeout(() => reject(new Error('Session timeout')), 5000) // Increased to 5 seconds
+            setTimeout(() => reject(new Error('Session timeout')), 25000) // Increased to 25 seconds
           )
         ])
 
