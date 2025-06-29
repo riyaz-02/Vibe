@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, LayoutDashboard, User, HelpCircle, Mic, MicOff, Globe, Bell, LogIn, Zap } from 'lucide-react';
+import { Home, LayoutDashboard, User, HelpCircle, Mic, MicOff, Globe, Bell, LogIn, Zap, Menu } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { useAuth } from '../../hooks/useAuth';
 import { useTranslation } from '../../utils/translations';
@@ -26,6 +26,7 @@ const Navbar: React.FC<NavbarProps> = ({ onAuthClick }) => {
 
   const navItems = [
     { path: '/', icon: Home, label: t('nav.home') },
+    { path: '/feed', icon: LayoutDashboard, label: 'Feed' },
     { path: '/dashboard', icon: LayoutDashboard, label: t('nav.dashboard') },
     { path: '/profile', icon: User, label: t('nav.profile') },
     { path: '/help', icon: HelpCircle, label: t('nav.help') }
@@ -52,7 +53,7 @@ const Navbar: React.FC<NavbarProps> = ({ onAuthClick }) => {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-teal-500 rounded-xl flex items-center justify-center">
+            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-teal-500 rounded-xl flex items-center justify-center shadow-lg">
               <Zap className="text-white" size={20} />
             </div>
             <div className="flex flex-col">
@@ -65,7 +66,7 @@ const Navbar: React.FC<NavbarProps> = ({ onAuthClick }) => {
             </div>
           </Link>
 
-          {/* Navigation Links */}
+          {/* Navigation Links - Desktop */}
           <div className="hidden md:flex items-center space-x-1">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -195,6 +196,11 @@ const Navbar: React.FC<NavbarProps> = ({ onAuthClick }) => {
                 <span>Sign In</span>
               </button>
             )}
+
+            {/* Mobile Menu Button */}
+            <button className="md:hidden p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors">
+              <Menu size={20} />
+            </button>
           </div>
         </div>
       </div>
@@ -202,7 +208,7 @@ const Navbar: React.FC<NavbarProps> = ({ onAuthClick }) => {
       {/* Mobile Navigation */}
       <div className="md:hidden border-t border-gray-200">
         <div className="flex justify-around py-2">
-          {navItems.map((item) => {
+          {navItems.slice(0, 4).map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
             

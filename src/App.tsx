@@ -9,6 +9,7 @@ import { supabase } from './lib/supabase';
 // Components
 import Navbar from './components/Layout/Navbar';
 import Footer from './components/Layout/Footer';
+import HomePage from './components/Home/HomePage';
 import Feed from './components/Feed/Feed';
 import Dashboard from './components/Dashboard/Dashboard';
 import Profile from './components/Profile/Profile';
@@ -113,12 +114,29 @@ function App() {
         
         <Navbar onAuthClick={() => setShowAuthModal(true)} />
         
-        <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="flex-grow">
           <Routes>
-            <Route path="/" element={<Feed />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/help" element={<Help />} />
+            <Route path="/" element={<HomePage onAuthClick={() => setShowAuthModal(true)} />} />
+            <Route path="/feed" element={
+              <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <Feed />
+              </div>
+            } />
+            <Route path="/dashboard" element={
+              <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <Dashboard />
+              </div>
+            } />
+            <Route path="/profile" element={
+              <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <Profile />
+              </div>
+            } />
+            <Route path="/help" element={
+              <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <Help />
+              </div>
+            } />
           </Routes>
         </main>
         
