@@ -3,15 +3,27 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase environment variables')
-  console.log('VITE_SUPABASE_URL:', supabaseUrl ? 'Set' : 'Missing')
-  console.log('VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? 'Set' : 'Missing')
-  console.log('Please check your .env file and ensure both VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set')
+// Check if environment variables are properly set
+const hasValidConfig = supabaseUrl && 
+                      supabaseAnonKey && 
+                      supabaseUrl !== 'your_supabase_project_url_here' &&
+                      supabaseAnonKey !== 'your_supabase_anon_key_here' &&
+                      supabaseUrl.startsWith('https://') &&
+                      supabaseAnonKey.length > 50
+
+if (!hasValidConfig) {
+  console.warn('⚠️ Supabase configuration missing or invalid')
+  console.log('📝 To enable full functionality:')
+  console.log('1. Create a Supabase project at https://supabase.com')
+  console.log('2. Get your project URL and anon key from Settings > API')
+  console.log('3. Update the .env file with your credentials')
+  console.log('4. Restart the development server')
+  console.log('')
+  console.log('🎯 Current status: Running in demo mode with mock data')
 }
 
 // Only create client if we have valid environment variables
-export const supabase = supabaseUrl && supabaseAnonKey 
+export const supabase = hasValidConfig 
   ? createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         autoRefreshToken: true,
@@ -26,21 +38,22 @@ export const supabase = supabaseUrl && supabaseAnonKey
     })
   : null
 
-// Test connection only if client exists
-if (supabase) {
+// Test connection only if client exists and we're not in demo mode
+if (supabase && hasValidConfig) {
+  // Test connection with a simple query
   supabase.from('profiles').select('count', { count: 'exact', head: true })
     .then(({ error, count }) => {
       if (error) {
-        console.error('Supabase connection test failed:', error)
+        console.error('❌ Supabase connection test failed:', error.message)
+        console.log('💡 Check your database setup and RLS policies')
       } else {
-        console.log('Supabase connected successfully. Profiles count:', count)
+        console.log('✅ Supabase connected successfully')
+        console.log(`📊 Database ready (${count || 0} profiles)`)
       }
     })
     .catch(err => {
-      console.error('Supabase connection error:', err)
+      console.error('❌ Supabase connection error:', err.message)
     })
-} else {
-  console.warn('Supabase client not initialized due to missing environment variables')
 }
 
 // Database types

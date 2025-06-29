@@ -10,15 +10,13 @@ export function useAuth() {
 
   useEffect(() => {
     let mounted = true
-    let timeoutId: NodeJS.Timeout
+    let timeoutId: NodeJS.Timeout | null = null
 
     const initializeAuth = async () => {
       try {
-        console.log('Initializing auth...')
-        
         // Check if Supabase client is available
         if (!supabase) {
-          console.warn('Supabase client not available - running in demo mode')
+          console.log('🎯 Running in demo mode - Supabase not configured')
           if (mounted) {
             setUser(null)
             setAuthenticated(false)
@@ -28,28 +26,36 @@ export function useAuth() {
           return
         }
 
-        // Set a timeout to prevent hanging
+        console.log('🔐 Initializing authentication...')
+        
+        // Set a reasonable timeout to prevent hanging
         timeoutId = setTimeout(() => {
           if (mounted) {
-            console.warn('Auth initialization timeout - continuing without authentication')
+            console.warn('⏰ Auth initialization timeout - continuing in demo mode')
             setUser(null)
             setAuthenticated(false)
             setCurrentUser(null)
             setLoading(false)
           }
-        }, 5000) // 5 second timeout
+        }, 3000) // Reduced to 3 seconds
 
-        // Get initial session
-        const { data: { session }, error } = await supabase.auth.getSession()
+        // Get initial session with timeout
+        const sessionPromise = supabase.auth.getSession()
+        const { data: { session }, error } = await Promise.race([
+          sessionPromise,
+          new Promise<any>((_, reject) => 
+            setTimeout(() => reject(new Error('Session timeout')), 2500)
+          )
+        ])
 
         // Clear timeout if we get a response
         if (timeoutId) {
           clearTimeout(timeoutId)
+          timeoutId = null
         }
 
         if (error) {
-          console.error('Session error:', error)
-          // Don't throw error, just continue without auth
+          console.error('❌ Session error:', error.message)
           if (mounted) {
             setUser(null)
             setAuthenticated(false)
@@ -61,7 +67,7 @@ export function useAuth() {
 
         if (!mounted) return
 
-        console.log('Session loaded:', !!session?.user)
+        console.log(session?.user ? '✅ User session found' : '👤 No active session')
         setUser(session?.user ?? null)
         setAuthenticated(!!session?.user)
         
@@ -70,12 +76,15 @@ export function useAuth() {
         }
         
         setLoading(false)
-      } catch (error) {
-        console.error('Auth initialization failed:', error)
+      } catch (error: any) {
+        console.error('❌ Auth initialization failed:', error.message)
+        
         // Clear timeout on error
         if (timeoutId) {
           clearTimeout(timeoutId)
+          timeoutId = null
         }
+        
         // Continue without authentication
         if (mounted) {
           setUser(null)
@@ -86,7 +95,7 @@ export function useAuth() {
       }
     }
 
-    // Initialize auth
+    // Initialize auth immediately
     initializeAuth()
 
     // Listen for auth changes only if Supabase client is available
@@ -97,7 +106,7 @@ export function useAuth() {
           async (event, session) => {
             if (!mounted) return
             
-            console.log('Auth state changed:', event, !!session?.user)
+            console.log('🔄 Auth state changed:', event)
             setUser(session?.user ?? null)
             setAuthenticated(!!session?.user)
             
@@ -111,8 +120,8 @@ export function useAuth() {
           }
         )
         subscription = authSubscription
-      } catch (error) {
-        console.error('Failed to set up auth listener:', error)
+      } catch (error: any) {
+        console.error('❌ Failed to set up auth listener:', error.message)
       }
     }
 
@@ -130,11 +139,11 @@ export function useAuth() {
   const fetchUserProfile = async (userId: string) => {
     try {
       if (!supabase) {
-        console.error('Supabase client not available')
+        console.error('❌ Supabase client not available')
         return
       }
 
-      console.log('Fetching user profile for:', userId)
+      console.log('👤 Fetching user profile...')
       
       const { data: profile, error } = await supabase
         .from('profiles')
@@ -148,18 +157,17 @@ export function useAuth() {
         .single()
 
       if (error) {
-        console.error('Profile fetch error:', error)
+        console.error('❌ Profile fetch error:', error.message)
         // Create a basic profile if it doesn't exist
         if (error.code === 'PGRST116') {
-          console.log('Profile not found, user can create one later')
+          console.log('📝 Profile not found - user can create one later')
           return
         }
-        // Don't throw error, just continue without profile
         return
       }
 
       if (profile) {
-        console.log('Profile loaded:', profile.name)
+        console.log('✅ Profile loaded:', profile.name)
         setCurrentUser({
           id: profile.id,
           name: profile.name,
@@ -185,18 +193,21 @@ export function useAuth() {
           }
         })
       }
-    } catch (error) {
-      console.error('Error fetching user profile:', error)
-      // Don't throw error, just continue without profile
+    } catch (error: any) {
+      console.error('❌ Error fetching user profile:', error.message)
     }
   }
 
   const signUp = async (email: string, password: string, name: string) => {
     try {
       if (!supabase) {
-        return { data: null, error: new Error('Authentication service not available. Please check your connection.') }
+        return { 
+          data: null, 
+          error: new Error('Authentication service not available. Please check your Supabase configuration.') 
+        }
       }
 
+      console.log('📝 Creating new account...')
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -206,9 +217,16 @@ export function useAuth() {
           },
         },
       })
+      
+      if (error) {
+        console.error('❌ Sign up error:', error.message)
+      } else {
+        console.log('✅ Account created successfully')
+      }
+      
       return { data, error }
-    } catch (error) {
-      console.error('Sign up error:', error)
+    } catch (error: any) {
+      console.error('❌ Sign up error:', error.message)
       return { data: null, error }
     }
   }
@@ -216,16 +234,27 @@ export function useAuth() {
   const signIn = async (email: string, password: string) => {
     try {
       if (!supabase) {
-        return { data: null, error: new Error('Authentication service not available. Please check your connection.') }
+        return { 
+          data: null, 
+          error: new Error('Authentication service not available. Please check your Supabase configuration.') 
+        }
       }
 
+      console.log('🔑 Signing in...')
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
+      
+      if (error) {
+        console.error('❌ Sign in error:', error.message)
+      } else {
+        console.log('✅ Signed in successfully')
+      }
+      
       return { data, error }
-    } catch (error) {
-      console.error('Sign in error:', error)
+    } catch (error: any) {
+      console.error('❌ Sign in error:', error.message)
       return { data: null, error }
     }
   }
@@ -236,10 +265,18 @@ export function useAuth() {
         return { error: new Error('Authentication service not available') }
       }
 
+      console.log('👋 Signing out...')
       const { error } = await supabase.auth.signOut()
+      
+      if (error) {
+        console.error('❌ Sign out error:', error.message)
+      } else {
+        console.log('✅ Signed out successfully')
+      }
+      
       return { error }
-    } catch (error) {
-      console.error('Sign out error:', error)
+    } catch (error: any) {
+      console.error('❌ Sign out error:', error.message)
       return { error }
     }
   }
