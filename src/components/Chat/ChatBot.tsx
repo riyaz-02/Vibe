@@ -18,13 +18,14 @@ const ChatBot: React.FC = () => {
     {
       id: '1',
       role: 'bot',
-      content: 'Hi! I\'m your Vibe AI assistant. I can help you with loan requests, verification processes, and answer any questions about our P2P lending platform. Ready to vibe together? How can I assist you today?',
+      content: 'Hi! I\'m your Vibe AI assistant. I can help you with loan requests, verification processes, and answer any questions about our P2P lending platform. Ready to vibe together? How can I assist you today? 🚀',
       timestamp: new Date()
     }
   ]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const { currentUser } = useStore();
 
   const scrollToBottom = () => {
@@ -35,13 +36,19 @@ const ChatBot: React.FC = () => {
     scrollToBottom();
   }, [messages]);
 
+  useEffect(() => {
+    if (isOpen && !isMinimized && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isOpen, isMinimized]);
+
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
-      content: inputMessage,
+      content: inputMessage.trim(),
       timestamp: new Date()
     };
 
@@ -56,7 +63,9 @@ const ChatBot: React.FC = () => {
         content: msg.content
       }));
 
-      const response = await geminiAI.chatWithBot(inputMessage, conversationHistory);
+      console.log('🤖 Sending message to Gemini AI:', userMessage.content);
+      const response = await geminiAI.chatWithBot(userMessage.content, conversationHistory);
+      console.log('✅ Received response from Gemini AI:', response);
 
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -67,10 +76,11 @@ const ChatBot: React.FC = () => {
 
       setMessages(prev => [...prev, botMessage]);
     } catch (error) {
+      console.error('❌ Chatbot error:', error);
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'bot',
-        content: 'I apologize, but I\'m experiencing technical difficulties. Please try again in a moment or contact our support team.',
+        content: 'I apologize, but I\'m experiencing technical difficulties right now. Please try again in a moment or contact our support team. Don\'t worry, we\'ll get back to vibing soon! 💪',
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errorMessage]);
@@ -96,6 +106,9 @@ const ChatBot: React.FC = () => {
 
   const handleQuickAction = (action: string) => {
     setInputMessage(action);
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
   };
 
   return (
@@ -113,7 +126,11 @@ const ChatBot: React.FC = () => {
             whileTap={{ scale: 0.9 }}
           >
             <MessageCircle size={24} />
-            <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full animate-pulse"></div>
+            <motion.div 
+              className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full"
+              animate={{ scale: [1, 1.2, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            />
           </motion.button>
         )}
       </AnimatePresence>
@@ -133,24 +150,32 @@ const ChatBot: React.FC = () => {
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-blue-500 to-teal-500 text-white rounded-t-xl">
               <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                <motion.div 
+                  className="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center"
+                  animate={{ rotate: [0, 360] }}
+                  transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+                >
                   <Zap size={16} />
-                </div>
+                </motion.div>
                 <div>
                   <h3 className="font-semibold">Vibe AI Assistant</h3>
-                  <p className="text-xs opacity-90">Always here to help you vibe!</p>
+                  <p className="text-xs opacity-90 hidden sm:block">
+                    Always here to help you vibe! 🚀
+                  </p>
                 </div>
               </div>
               <div className="flex items-center space-x-2">
                 <button
                   onClick={() => setIsMinimized(!isMinimized)}
                   className="p-1 hover:bg-white hover:bg-opacity-20 rounded transition-colors"
+                  aria-label={isMinimized ? "Maximize chat" : "Minimize chat"}
                 >
                   {isMinimized ? <Maximize2 size={16} /> : <Minimize2 size={16} />}
                 </button>
                 <button
                   onClick={() => setIsOpen(false)}
                   className="p-1 hover:bg-white hover:bg-opacity-20 rounded transition-colors"
+                  aria-label="Close chat"
                 >
                   <X size={16} />
                 </button>
@@ -167,11 +192,12 @@ const ChatBot: React.FC = () => {
                       className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3 }}
                     >
                       <div className={`flex items-start space-x-2 max-w-[80%] ${
                         message.role === 'user' ? 'flex-row-reverse space-x-reverse' : ''
                       }`}>
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
                           message.role === 'user' 
                             ? 'bg-blue-500 text-white' 
                             : 'bg-gradient-to-r from-blue-500 to-teal-500 text-white'
@@ -183,7 +209,7 @@ const ChatBot: React.FC = () => {
                             ? 'bg-blue-500 text-white'
                             : 'bg-gray-100 text-gray-800'
                         }`}>
-                          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                          <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
                           <p className={`text-xs mt-1 ${
                             message.role === 'user' ? 'text-blue-100' : 'text-gray-500'
                           }`}>
@@ -206,9 +232,21 @@ const ChatBot: React.FC = () => {
                         </div>
                         <div className="bg-gray-100 rounded-lg p-3">
                           <div className="flex space-x-1">
-                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                            <motion.div 
+                              className="w-2 h-2 bg-gray-400 rounded-full"
+                              animate={{ y: [0, -5, 0] }}
+                              transition={{ duration: 0.6, repeat: Infinity, delay: 0 }}
+                            />
+                            <motion.div 
+                              className="w-2 h-2 bg-gray-400 rounded-full"
+                              animate={{ y: [0, -5, 0] }}
+                              transition={{ duration: 0.6, repeat: Infinity, delay: 0.1 }}
+                            />
+                            <motion.div 
+                              className="w-2 h-2 bg-gray-400 rounded-full"
+                              animate={{ y: [0, -5, 0] }}
+                              transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }}
+                            />
                           </div>
                         </div>
                       </div>
@@ -238,8 +276,9 @@ const ChatBot: React.FC = () => {
 
                 {/* Input */}
                 <div className="border-t border-gray-200 p-4">
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-end space-x-2">
                     <textarea
+                      ref={inputRef}
                       value={inputMessage}
                       onChange={(e) => setInputMessage(e.target.value)}
                       onKeyPress={handleKeyPress}
@@ -248,13 +287,15 @@ const ChatBot: React.FC = () => {
                       rows={1}
                       disabled={isLoading}
                     />
-                    <button
+                    <motion.button
                       onClick={handleSendMessage}
                       disabled={!inputMessage.trim() || isLoading}
                       className="bg-gradient-to-r from-blue-500 to-teal-500 text-white p-2 rounded-lg hover:from-blue-600 hover:to-teal-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                     >
                       <Send size={16} />
-                    </button>
+                    </motion.button>
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
                     Powered by Gemini AI • Press Enter to send

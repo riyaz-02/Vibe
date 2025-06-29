@@ -99,6 +99,20 @@
     background-size: 50px 50px;
   }
   
+  /* Marquee animation for RBI disclaimer */
+  @keyframes marquee {
+    0% {
+      transform: translateX(100%);
+    }
+    100% {
+      transform: translateX(-100%);
+    }
+  }
+  
+  .animate-marquee {
+    animation: marquee 60s linear infinite;
+  }
+  
   /* Accessibility helpers */
   .sr-only {
     position: absolute;

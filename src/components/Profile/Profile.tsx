@@ -1,16 +1,141 @@
-import React from 'react';
-import { CheckCircle, Edit3, Star, TrendingUp, Award, Shield, Camera } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { CheckCircle, Edit3, Star, TrendingUp, Award, Shield, Camera, User, Mail, Phone, Calendar } from 'lucide-react';
 import { useStore } from '../../store/useStore';
+import { useAuth } from '../../hooks/useAuth';
 import { useTranslation } from '../../utils/translations';
 import { motion } from 'framer-motion';
+import { supabase } from '../../lib/supabase';
 import { mockUsers } from '../../utils/mockData';
 
 const Profile: React.FC = () => {
-  const { currentLanguage, currentUser } = useStore();
+  const { currentLanguage, currentUser, setCurrentUser } = useStore();
+  const { user } = useAuth();
   const t = useTranslation(currentLanguage);
+  const [profileData, setProfileData] = useState(currentUser || mockUsers[0]);
+  const [loading, setLoading] = useState(true);
 
-  // Use mock user if no current user
-  const user = currentUser || mockUsers[0];
+  useEffect(() => {
+    if (user) {
+      fetchProfileData();
+    } else {
+      setProfileData(mockUsers[0]);
+      setLoading(false);
+    }
+  }, [user]);
+
+  const fetchProfileData = async () => {
+    try {
+      setLoading(true);
+      
+      if (!supabase || !user) {
+        setProfileData(mockUsers[0]);
+        setLoading(false);
+        return;
+      }
+
+      // Fetch user profile with related data
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select(`
+          *,
+          user_stats(*),
+          accessibility_settings(*),
+          badges(*)
+        `)
+        .eq('id', user.id)
+        .single();
+
+      if (profileError && profileError.code !== 'PGRST116') {
+        console.error('Error fetching profile:', profileError);
+        setProfileData(mockUsers[0]);
+        setLoading(false);
+        return;
+      }
+
+      // Fetch loan statistics
+      const { data: loanFundings } = await supabase
+        .from('loan_fundings')
+        .select('amount')
+        .eq('lender_id', user.id);
+
+      const { data: loanRequests } = await supabase
+        .from('loan_requests')
+        .select('amount, status')
+        .eq('borrower_id', user.id);
+
+      // Calculate stats
+      const totalAmountLent = loanFundings?.reduce((sum, funding) => sum + Number(funding.amount), 0) || 0;
+      const totalAmountBorrowed = loanRequests?.reduce((sum, request) => sum + Number(request.amount), 0) || 0;
+      const totalLoansGiven = loanFundings?.length || 0;
+      const totalLoansTaken = loanRequests?.length || 0;
+      const successfulRepayments = loanRequests?.filter(req => req.status === 'completed').length || 0;
+
+      if (profile) {
+        const formattedProfile = {
+          id: profile.id,
+          name: profile.name,
+          email: profile.email,
+          avatar: profile.avatar_url || 'https://images.pexels.com/photos/771742/pexels-photo-771742.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+          isVerified: profile.is_verified || false,
+          badges: profile.badges || [],
+          stats: {
+            totalLoansGiven,
+            totalLoansTaken,
+            successfulRepayments,
+            averageRating: profile.user_stats?.average_rating || 0,
+            totalAmountLent,
+            totalAmountBorrowed
+          },
+          createdAt: new Date(profile.created_at),
+          language: profile.language || 'en',
+          accessibilitySettings: profile.accessibility_settings || {
+            voiceNavigation: false,
+            highContrast: false,
+            screenReader: false,
+            fontSize: 'medium'
+          }
+        };
+
+        setProfileData(formattedProfile);
+        setCurrentUser(formattedProfile);
+      } else {
+        // Create basic profile from auth user
+        const basicProfile = {
+          id: user.id,
+          name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
+          email: user.email || '',
+          avatar: 'https://images.pexels.com/photos/771742/pexels-photo-771742.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+          isVerified: false,
+          badges: [],
+          stats: {
+            totalLoansGiven,
+            totalLoansTaken,
+            successfulRepayments,
+            averageRating: 0,
+            totalAmountLent,
+            totalAmountBorrowed
+          },
+          createdAt: new Date(user.created_at || Date.now()),
+          language: 'en',
+          accessibilitySettings: {
+            voiceNavigation: false,
+            highContrast: false,
+            screenReader: false,
+            fontSize: 'medium'
+          }
+        };
+
+        setProfileData(basicProfile);
+        setCurrentUser(basicProfile);
+      }
+
+    } catch (error) {
+      console.error('Error fetching profile data:', error);
+      setProfileData(mockUsers[0]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const BadgeCard = ({ badge }: any) => (
     <motion.div
@@ -40,6 +165,29 @@ const Profile: React.FC = () => {
     </div>
   );
 
+  if (loading) {
+    return (
+      <div className="max-w-4xl mx-auto space-y-6">
+        <div className="animate-pulse">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="h-32 bg-gray-200"></div>
+            <div className="relative px-6 pb-6">
+              <div className="flex flex-col md:flex-row md:items-end md:justify-between -mt-16">
+                <div className="flex items-end space-x-4">
+                  <div className="w-32 h-32 bg-gray-300 rounded-full"></div>
+                  <div className="pb-4 space-y-2">
+                    <div className="h-6 bg-gray-200 rounded w-32"></div>
+                    <div className="h-4 bg-gray-200 rounded w-24"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Profile Header */}
@@ -58,8 +206,8 @@ const Profile: React.FC = () => {
               {/* Profile Picture */}
               <div className="relative">
                 <img
-                  src={user.avatar}
-                  alt={user.name}
+                  src={profileData.avatar}
+                  alt={profileData.name}
                   className="w-32 h-32 rounded-full border-4 border-white shadow-lg object-cover"
                 />
                 <button className="absolute bottom-2 right-2 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors">
@@ -70,19 +218,23 @@ const Profile: React.FC = () => {
               {/* Basic Info */}
               <div className="pb-4">
                 <div className="flex items-center space-x-2 mb-1">
-                  <h1 className="text-2xl font-bold text-gray-900">{user.name}</h1>
-                  {user.isVerified && (
+                  <h1 className="text-2xl font-bold text-gray-900">{profileData.name}</h1>
+                  {profileData.isVerified && (
                     <CheckCircle size={24} className="text-blue-500" />
                   )}
                 </div>
-                <p className="text-gray-600">{user.email}</p>
+                <p className="text-gray-600 flex items-center space-x-1">
+                  <Mail size={14} />
+                  <span>{profileData.email}</span>
+                </p>
                 <div className="flex items-center space-x-4 mt-2">
                   <div className="flex items-center space-x-1">
                     <Star className="text-yellow-500" size={16} fill="currentColor" />
-                    <span className="text-sm font-medium">{user.stats.averageRating}</span>
+                    <span className="text-sm font-medium">{profileData.stats.averageRating}</span>
                   </div>
-                  <div className="text-sm text-gray-500">
-                    Member since {user.createdAt.toLocaleDateString()}
+                  <div className="text-sm text-gray-500 flex items-center space-x-1">
+                    <Calendar size={14} />
+                    <span>Member since {profileData.createdAt.toLocaleDateString()}</span>
                   </div>
                 </div>
               </div>
@@ -114,25 +266,25 @@ const Profile: React.FC = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           <StatItem
             label="Loans Given"
-            value={user.stats.totalLoansGiven}
+            value={profileData.stats.totalLoansGiven}
             icon={TrendingUp}
             color="bg-blue-500"
           />
           <StatItem
             label="Loans Taken"
-            value={user.stats.totalLoansTaken}
+            value={profileData.stats.totalLoansTaken}
             icon={TrendingUp}
             color="bg-green-500"
           />
           <StatItem
             label="Successful Repayments"
-            value={user.stats.successfulRepayments}
+            value={profileData.stats.successfulRepayments}
             icon={CheckCircle}
             color="bg-purple-500"
           />
           <StatItem
             label="Total Amount Lent"
-            value={`₹${(user.stats.totalAmountLent / 1000).toFixed(0)}K`}
+            value={`₹${(profileData.stats.totalAmountLent / 1000).toFixed(0)}K`}
             icon={Award}
             color="bg-orange-500"
           />
@@ -148,12 +300,12 @@ const Profile: React.FC = () => {
       >
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold text-gray-900">{t('profile.badges')}</h2>
-          <div className="text-sm text-gray-500">{user.badges.length} earned</div>
+          <div className="text-sm text-gray-500">{profileData.badges.length} earned</div>
         </div>
         
-        {user.badges.length > 0 ? (
+        {profileData.badges.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {user.badges.map((badge) => (
+            {profileData.badges.map((badge) => (
               <BadgeCard key={badge.id} badge={badge} />
             ))}
           </div>
@@ -183,8 +335,9 @@ const Profile: React.FC = () => {
             <label className="relative inline-flex items-center cursor-pointer">
               <input
                 type="checkbox"
-                checked={user.accessibilitySettings.voiceNavigation}
+                checked={profileData.accessibilitySettings.voiceNavigation}
                 className="sr-only peer"
+                readOnly
               />
               <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
             </label>
@@ -198,8 +351,9 @@ const Profile: React.FC = () => {
             <label className="relative inline-flex items-center cursor-pointer">
               <input
                 type="checkbox"
-                checked={user.accessibilitySettings.highContrast}
+                checked={profileData.accessibilitySettings.highContrast}
                 className="sr-only peer"
+                readOnly
               />
               <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
             </label>
@@ -213,8 +367,9 @@ const Profile: React.FC = () => {
             <label className="relative inline-flex items-center cursor-pointer">
               <input
                 type="checkbox"
-                checked={user.accessibilitySettings.screenReader}
+                checked={profileData.accessibilitySettings.screenReader}
                 className="sr-only peer"
+                readOnly
               />
               <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
             </label>
@@ -239,16 +394,22 @@ const Profile: React.FC = () => {
             <span className="text-green-800">Email Verified</span>
           </div>
           <div className="flex items-center space-x-2">
-            <CheckCircle className="text-green-500" size={20} />
-            <span className="text-green-800">Phone Verified</span>
+            {profileData.isVerified ? (
+              <CheckCircle className="text-green-500" size={20} />
+            ) : (
+              <div className="w-5 h-5 border-2 border-gray-300 rounded-full"></div>
+            )}
+            <span className={profileData.isVerified ? "text-green-800" : "text-gray-600"}>
+              Identity Verified
+            </span>
           </div>
           <div className="flex items-center space-x-2">
-            <CheckCircle className="text-green-500" size={20} />
-            <span className="text-green-800">Identity Verified</span>
+            <div className="w-5 h-5 border-2 border-gray-300 rounded-full"></div>
+            <span className="text-gray-600">Phone Verified</span>
           </div>
           <div className="flex items-center space-x-2">
-            <CheckCircle className="text-green-500" size={20} />
-            <span className="text-green-800">Bank Account Linked</span>
+            <div className="w-5 h-5 border-2 border-gray-300 rounded-full"></div>
+            <span className="text-gray-600">Bank Account Linked</span>
           </div>
         </div>
         <div className="mt-4 p-3 bg-white bg-opacity-50 rounded-lg">

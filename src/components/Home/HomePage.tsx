@@ -139,7 +139,7 @@ const HomePage: React.FC<HomePageProps> = ({ onAuthClick }) => {
             </motion.div>
 
             <motion.h2 
-              className="text-4xl lg:text-6xl font-bold text-white mb-6 leading-tight"
+              className="text-4xl lg:text-6xl font-bold text-white mb-6 leading-tight max-w-5xl mx-auto"
               variants={fadeInUp}
             >
               The Future of
@@ -149,7 +149,7 @@ const HomePage: React.FC<HomePageProps> = ({ onAuthClick }) => {
             </motion.h2>
 
             <motion.p 
-              className="text-xl lg:text-2xl text-blue-100 mb-8 max-w-3xl mx-auto leading-relaxed"
+              className="text-xl lg:text-2xl text-blue-100 mb-8 max-w-4xl mx-auto leading-relaxed"
               variants={fadeInUp}
             >
               Connect with students worldwide through secure peer-to-peer lending. 
