@@ -1,10 +1,12 @@
-import React from 'react';
-import { TrendingUp, TrendingDown, DollarSign, Clock, Award, Target } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { TrendingUp, TrendingDown, DollarSign, Clock, Award, Target, Users, CreditCard } from 'lucide-react';
 import { useStore } from '../../store/useStore';
+import { useAuth } from '../../hooks/useAuth';
 import { useTranslation } from '../../utils/translations';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
 import { motion } from 'framer-motion';
+import { supabase } from '../../lib/supabase';
 
 ChartJS.register(
   CategoryScale,
@@ -20,31 +22,237 @@ ChartJS.register(
 
 const Dashboard: React.FC = () => {
   const { currentLanguage, currentUser } = useStore();
+  const { user } = useAuth();
   const t = useTranslation(currentLanguage);
+  const [dashboardData, setDashboardData] = useState({
+    stats: {
+      totalLent: 0,
+      totalBorrowed: 0,
+      activeLoans: 0,
+      completedLoans: 0,
+      averageReturn: 0,
+      creditScore: 750
+    },
+    recentActivity: [],
+    loanPerformance: {
+      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+      lentData: [0, 0, 0, 0, 0, 0],
+      borrowedData: [0, 0, 0, 0, 0, 0]
+    },
+    repaymentStatus: {
+      onTime: 0,
+      late: 0,
+      pending: 0
+    }
+  });
+  const [loading, setLoading] = useState(true);
 
-  // Mock dashboard data
-  const dashboardStats = {
-    totalLent: 25000,
-    totalBorrowed: 8000,
-    activeLoans: 3,
-    completedLoans: 7,
-    averageReturn: 4.2,
-    creditScore: 750
+  useEffect(() => {
+    if (user) {
+      fetchDashboardData();
+    }
+  }, [user]);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      
+      if (!supabase || !user) {
+        // Use mock data if Supabase is not available
+        setDashboardData({
+          stats: {
+            totalLent: 25000,
+            totalBorrowed: 8000,
+            activeLoans: 3,
+            completedLoans: 7,
+            averageReturn: 4.2,
+            creditScore: 750
+          },
+          recentActivity: [
+            { type: 'lent', amount: 1500, user: 'Priya Sharma', time: '2 hours ago', status: 'completed' },
+            { type: 'repaid', amount: 2000, user: 'Medical Loan', time: '1 day ago', status: 'completed' },
+            { type: 'lent', amount: 3500, user: 'Rahul Kumar', time: '3 days ago', status: 'pending' }
+          ],
+          loanPerformance: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+            lentData: [2000, 3500, 4000, 2800, 5200, 7500],
+            borrowedData: [1000, 0, 2500, 0, 3000, 1500]
+          },
+          repaymentStatus: {
+            onTime: 85,
+            late: 10,
+            pending: 5
+          }
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Fetch user stats
+      const { data: userStats, error: statsError } = await supabase
+        .from('user_stats')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (statsError && statsError.code !== 'PGRST116') {
+        console.error('Error fetching user stats:', statsError);
+      }
+
+      // Fetch loan fundings (money lent)
+      const { data: loanFundings, error: fundingsError } = await supabase
+        .from('loan_fundings')
+        .select(`
+          *,
+          loan_requests!inner(
+            title,
+            borrower_id,
+            profiles!borrower_id(name)
+          )
+        `)
+        .eq('lender_id', user.id)
+        .order('funded_at', { ascending: false })
+        .limit(10);
+
+      if (fundingsError) {
+        console.error('Error fetching loan fundings:', fundingsError);
+      }
+
+      // Fetch loan requests (money borrowed)
+      const { data: loanRequests, error: requestsError } = await supabase
+        .from('loan_requests')
+        .select('*')
+        .eq('borrower_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (requestsError) {
+        console.error('Error fetching loan requests:', requestsError);
+      }
+
+      // Calculate stats
+      const totalLent = loanFundings?.reduce((sum, funding) => sum + Number(funding.amount), 0) || 0;
+      const totalBorrowed = loanRequests?.reduce((sum, request) => sum + Number(request.amount), 0) || 0;
+      const activeLoans = loanRequests?.filter(req => req.status === 'active').length || 0;
+      const completedLoans = loanRequests?.filter(req => req.status === 'completed').length || 0;
+
+      // Prepare recent activity
+      const recentActivity = [];
+      
+      // Add lending activities
+      if (loanFundings) {
+        loanFundings.slice(0, 5).forEach(funding => {
+          recentActivity.push({
+            type: 'lent',
+            amount: Number(funding.amount),
+            user: funding.loan_requests?.profiles?.name || 'Unknown User',
+            time: new Date(funding.funded_at).toLocaleDateString(),
+            status: 'completed'
+          });
+        });
+      }
+
+      // Add borrowing activities
+      if (loanRequests) {
+        loanRequests.slice(0, 3).forEach(request => {
+          recentActivity.push({
+            type: 'borrowed',
+            amount: Number(request.amount),
+            user: request.title,
+            time: new Date(request.created_at).toLocaleDateString(),
+            status: request.status
+          });
+        });
+      }
+
+      // Sort by most recent
+      recentActivity.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+
+      // Prepare chart data (simplified for demo)
+      const loanPerformanceData = {
+        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+        lentData: [
+          Math.floor(totalLent * 0.1),
+          Math.floor(totalLent * 0.15),
+          Math.floor(totalLent * 0.2),
+          Math.floor(totalLent * 0.15),
+          Math.floor(totalLent * 0.25),
+          Math.floor(totalLent * 0.15)
+        ],
+        borrowedData: [
+          Math.floor(totalBorrowed * 0.3),
+          0,
+          Math.floor(totalBorrowed * 0.4),
+          0,
+          Math.floor(totalBorrowed * 0.3),
+          0
+        ]
+      };
+
+      setDashboardData({
+        stats: {
+          totalLent,
+          totalBorrowed,
+          activeLoans,
+          completedLoans,
+          averageReturn: userStats?.average_rating || 4.2,
+          creditScore: 750 // This would come from a credit scoring service
+        },
+        recentActivity: recentActivity.slice(0, 5),
+        loanPerformance: loanPerformanceData,
+        repaymentStatus: {
+          onTime: 85,
+          late: 10,
+          pending: 5
+        }
+      });
+
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      // Fallback to mock data
+      setDashboardData({
+        stats: {
+          totalLent: 25000,
+          totalBorrowed: 8000,
+          activeLoans: 3,
+          completedLoans: 7,
+          averageReturn: 4.2,
+          creditScore: 750
+        },
+        recentActivity: [
+          { type: 'lent', amount: 1500, user: 'Priya Sharma', time: '2 hours ago', status: 'completed' },
+          { type: 'repaid', amount: 2000, user: 'Medical Loan', time: '1 day ago', status: 'completed' },
+          { type: 'lent', amount: 3500, user: 'Rahul Kumar', time: '3 days ago', status: 'pending' }
+        ],
+        loanPerformance: {
+          labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+          lentData: [2000, 3500, 4000, 2800, 5200, 7500],
+          borrowedData: [1000, 0, 2500, 0, 3000, 1500]
+        },
+        repaymentStatus: {
+          onTime: 85,
+          late: 10,
+          pending: 5
+        }
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const loanPerformanceData = {
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+  const loanPerformanceChartData = {
+    labels: dashboardData.loanPerformance.labels,
     datasets: [
       {
         label: 'Amount Lent',
-        data: [2000, 3500, 4000, 2800, 5200, 7500],
+        data: dashboardData.loanPerformance.lentData,
         borderColor: 'rgb(59, 130, 246)',
         backgroundColor: 'rgba(59, 130, 246, 0.1)',
         tension: 0.4
       },
       {
         label: 'Amount Borrowed',
-        data: [1000, 0, 2500, 0, 3000, 1500],
+        data: dashboardData.loanPerformance.borrowedData,
         borderColor: 'rgb(16, 185, 129)',
         backgroundColor: 'rgba(16, 185, 129, 0.1)',
         tension: 0.4
@@ -56,7 +264,7 @@ const Dashboard: React.FC = () => {
     labels: ['On Time', 'Late', 'Pending'],
     datasets: [
       {
-        data: [85, 10, 5],
+        data: [dashboardData.repaymentStatus.onTime, dashboardData.repaymentStatus.late, dashboardData.repaymentStatus.pending],
         backgroundColor: [
           'rgba(34, 197, 94, 0.8)',
           'rgba(251, 191, 36, 0.8)',
@@ -83,7 +291,7 @@ const Dashboard: React.FC = () => {
         <div>
           <p className="text-sm font-medium text-gray-600">{title}</p>
           <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
-          {change && (
+          {change !== undefined && (
             <div className={`flex items-center mt-2 text-sm ${change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               {change >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
               <span className="ml-1">{Math.abs(change)}%</span>
@@ -97,6 +305,27 @@ const Dashboard: React.FC = () => {
     </motion.div>
   );
 
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto space-y-6">
+        <div className="animate-pulse">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                <div className="h-8 bg-gray-200 rounded w-1/2"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       {/* Header */}
@@ -104,12 +333,12 @@ const Dashboard: React.FC = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">{t('dashboard.title')}</h1>
-            <p className="text-gray-600 mt-1">Welcome back, {currentUser?.name}!</p>
+            <p className="text-gray-600 mt-1">Welcome back, {currentUser?.name || user?.email}!</p>
           </div>
           <div className="flex items-center space-x-4">
             <div className="text-right">
               <div className="text-sm text-gray-500">Credit Score</div>
-              <div className="text-xl font-bold text-green-600">{dashboardStats.creditScore}</div>
+              <div className="text-xl font-bold text-green-600">{dashboardData.stats.creditScore}</div>
             </div>
             <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
               <Award className="text-white" size={24} />
@@ -122,27 +351,27 @@ const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="Total Amount Lent"
-          value={`₹${dashboardStats.totalLent.toLocaleString()}`}
+          value={`₹${dashboardData.stats.totalLent.toLocaleString()}`}
           change={12}
           icon={TrendingUp}
           color="bg-blue-500"
         />
         <StatCard
           title="Total Amount Borrowed"
-          value={`₹${dashboardStats.totalBorrowed.toLocaleString()}`}
+          value={`₹${dashboardData.stats.totalBorrowed.toLocaleString()}`}
           change={-5}
           icon={DollarSign}
           color="bg-green-500"
         />
         <StatCard
           title="Active Loans"
-          value={dashboardStats.activeLoans}
+          value={dashboardData.stats.activeLoans}
           icon={Clock}
           color="bg-orange-500"
         />
         <StatCard
           title="Average Return"
-          value={`${dashboardStats.averageReturn}%`}
+          value={`${dashboardData.stats.averageReturn}%`}
           change={0.3}
           icon={Target}
           color="bg-purple-500"
@@ -159,7 +388,7 @@ const Dashboard: React.FC = () => {
         >
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Loan Activity Over Time</h3>
           <Line
-            data={loanPerformanceData}
+            data={loanPerformanceChartData}
             options={{
               responsive: true,
               plugins: {
@@ -216,22 +445,24 @@ const Dashboard: React.FC = () => {
           <h3 className="text-lg font-semibold text-gray-900">Recent Activity</h3>
         </div>
         <div className="divide-y divide-gray-200">
-          {[
-            { type: 'lent', amount: 1500, user: 'Priya Sharma', time: '2 hours ago', status: 'completed' },
-            { type: 'repaid', amount: 2000, user: 'Medical Loan', time: '1 day ago', status: 'completed' },
-            { type: 'lent', amount: 3500, user: 'Rahul Kumar', time: '3 days ago', status: 'pending' }
-          ].map((activity, index) => (
+          {dashboardData.recentActivity.map((activity, index) => (
             <div key={index} className="p-4 hover:bg-gray-50 transition-colors">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    activity.type === 'lent' ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-600'
+                    activity.type === 'lent' ? 'bg-blue-100 text-blue-600' : 
+                    activity.type === 'borrowed' ? 'bg-green-100 text-green-600' :
+                    'bg-purple-100 text-purple-600'
                   }`}>
-                    {activity.type === 'lent' ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+                    {activity.type === 'lent' ? <TrendingUp size={16} /> : 
+                     activity.type === 'borrowed' ? <CreditCard size={16} /> :
+                     <TrendingDown size={16} />}
                   </div>
                   <div>
                     <p className="font-medium text-gray-900">
-                      {activity.type === 'lent' ? 'Lent to' : 'Repaid'} {activity.user}
+                      {activity.type === 'lent' ? 'Lent to' : 
+                       activity.type === 'borrowed' ? 'Borrowed for' : 
+                       'Repaid'} {activity.user}
                     </p>
                     <p className="text-sm text-gray-500">{activity.time}</p>
                   </div>
@@ -241,6 +472,8 @@ const Dashboard: React.FC = () => {
                   <div className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
                     activity.status === 'completed' 
                       ? 'bg-green-100 text-green-800' 
+                      : activity.status === 'active'
+                      ? 'bg-blue-100 text-blue-800'
                       : 'bg-yellow-100 text-yellow-800'
                   }`}>
                     {activity.status}

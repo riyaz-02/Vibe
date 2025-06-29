@@ -9,6 +9,7 @@ import { supabase } from './lib/supabase';
 // Components
 import Navbar from './components/Layout/Navbar';
 import Footer from './components/Layout/Footer';
+import BoltAttribution from './components/Layout/BoltAttribution';
 import HomePage from './components/Home/HomePage';
 import Feed from './components/Feed/Feed';
 import Dashboard from './components/Dashboard/Dashboard';
@@ -150,6 +151,9 @@ function App() {
         
         {/* AI Chatbot */}
         <ChatBot />
+        
+        {/* Bolt Attribution */}
+        <BoltAttribution />
         
         {/* Toast Notifications */}
         <Toaster

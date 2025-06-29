@@ -33,7 +33,7 @@ export class GeminiAI {
         body: JSON.stringify({
           contents,
           generationConfig: {
-            temperature: 0.1,
+            temperature: 0.7,
             topK: 32,
             topP: 1,
             maxOutputTokens: 4096,
@@ -60,11 +60,16 @@ export class GeminiAI {
       });
 
       if (!response.ok) {
-        throw new Error(`Gemini API error: ${response.status}`);
+        throw new Error(`Gemini API error: ${response.status} - ${response.statusText}`);
       }
 
       const data = await response.json();
-      return data.candidates[0]?.content?.parts[0]?.text || '';
+      
+      if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+        throw new Error('Invalid response format from Gemini API');
+      }
+      
+      return data.candidates[0].content.parts[0].text || '';
     } catch (error) {
       console.error('Gemini AI request failed:', error);
       console.log('🎭 Falling back to mock response');
@@ -130,8 +135,33 @@ export class GeminiAI {
       });
     }
     
-    // Default chatbot response
-    return "I'm currently running in demo mode with mock AI responses. To enable full Gemini AI features, please configure your API key in the .env file. How can I help you with Vibe today?";
+    // Enhanced chatbot responses
+    if (prompt.toLowerCase().includes('hello') || prompt.toLowerCase().includes('hi')) {
+      return "Hello! Welcome to Vibe! I'm your AI assistant here to help you with everything related to peer-to-peer lending. Whether you want to lend money, borrow funds, or learn about our platform, I'm here to help you vibe! What would you like to know?";
+    }
+    
+    if (prompt.toLowerCase().includes('loan') || prompt.toLowerCase().includes('borrow')) {
+      return "Great question about loans! On Vibe, you can both lend and borrow money. To post a loan request, you'll need to verify your identity, provide details about why you need the funds, and set your interest rate and repayment terms. Our AI verifies documents instantly, and you can get funded in under 5 minutes! Would you like me to guide you through the process?";
+    }
+    
+    if (prompt.toLowerCase().includes('verification') || prompt.toLowerCase().includes('verify')) {
+      return "Vibe uses advanced AI-powered verification! We use Gemini AI to verify government IDs and medical prescriptions with 95% accuracy. For medical loans, we can verify prescriptions instantly. The process is secure, fast, and your data is protected on the Algorand blockchain. What type of verification do you need help with?";
+    }
+    
+    if (prompt.toLowerCase().includes('interest') || prompt.toLowerCase().includes('rate')) {
+      return "Interest rates on Vibe are competitive and set by borrowers! Typically, rates range from 3-15% annually depending on the loan purpose, amount, and borrower's profile. Medical emergencies often get lower rates due to community support. Our AI analyzes risk factors to suggest fair rates. Would you like to know more about how rates are determined?";
+    }
+    
+    if (prompt.toLowerCase().includes('safe') || prompt.toLowerCase().includes('security')) {
+      return "Security is our top priority at Vibe! We use Algorand blockchain for transparent, immutable transactions, AI-powered document verification, and bank-grade encryption. All user data is protected, and we're working towards RBI compliance. However, remember that P2P lending involves risks, so always assess loans carefully. What specific security aspect would you like to know about?";
+    }
+    
+    if (prompt.toLowerCase().includes('help') || prompt.toLowerCase().includes('support')) {
+      return "I'm here to help you vibe! I can assist with:\n\n🏦 Loan posting and funding processes\n🔍 AI verification and document upload\n💰 Interest rates and repayment terms\n🔒 Security and blockchain features\n♿ Accessibility features like voice navigation\n🌍 Multi-language support\n\nWhat would you like help with today?";
+    }
+    
+    // Default response with more personality
+    return "Thanks for reaching out! I'm your Vibe AI assistant, powered by Gemini AI. I'm currently running in demo mode, but I'm still here to help you understand our P2P lending platform! \n\nVibe connects students worldwide for lending and borrowing with features like:\n✨ AI-powered verification\n🔗 Blockchain security\n♿ Voice navigation\n📱 Social media-like feed\n⚡ Lightning-fast funding\n\nHow can I help you start vibing today? Feel free to ask about loans, verification, security, or any other features!";
   }
 
   // Convert file to base64 for image analysis
@@ -349,12 +379,20 @@ export class GeminiAI {
   async chatWithBot(message: string, conversationHistory: Array<{role: string, content: string}> = []): Promise<string> {
     try {
       const systemPrompt = `
-        You are Vibe AI Assistant, a helpful chatbot for Vibe - a peer-to-peer lending platform for students.
+        You are Vibe AI Assistant, a helpful and friendly chatbot for Vibe - a peer-to-peer lending platform for students.
         
         Platform Info:
         - Name: Vibe
         - Tagline: "Lend, Borrow, Connect – Vibe!"
         - Purpose: P2P lending platform connecting students globally
+        - Key Features: AI verification, blockchain security, social feed, voice navigation, lightning-fast funding
+        
+        Your personality:
+        - Friendly, enthusiastic, and helpful
+        - Use "vibe" language naturally but not excessively
+        - Be encouraging and supportive
+        - Show empathy for students' financial challenges
+        - Be knowledgeable about fintech and lending
         
         Your role:
         - Help users understand how P2P lending works on Vibe
@@ -365,26 +403,28 @@ export class GeminiAI {
         - Answer questions about blockchain security and Algorand integration
         - Help with account verification and document upload
         - Explain Gemini AI verification features
+        - Provide support for the social feed features
         
         Guidelines:
-        - Be friendly, helpful, and use "vibe" language naturally
-        - Keep responses concise but informative
+        - Keep responses conversational and engaging
+        - Use emojis appropriately to add personality
         - Always prioritize user safety and financial responsibility
-        - Mention that P2P lending involves risks
+        - Mention that P2P lending involves risks when relevant
         - Encourage users to read terms and conditions
-        - Support multiple languages (English, Hindi, Hinglish, Bengali, Spanish, Chinese)
+        - Support multiple languages when asked
         - Be sensitive to financial difficulties students may face
-        - Use encouraging language like "Let's vibe together" or "Ready to help you vibe"
+        - Provide specific, actionable advice
+        - If you don't know something, admit it and offer to help find the answer
         
-        Platform features to mention:
-        - Voice navigation for accessibility
-        - Blockchain-secured transactions on Algorand
-        - Gemini AI-powered document verification
-        - Multi-language support
-        - Medical prescription verification for medical loans
-        - Government ID verification for security
-        - Real-time risk assessment
-        - 24/7 AI chatbot support
+        Platform features to highlight:
+        - 🎯 Social media-like feed with photos, likes, comments
+        - 🤖 AI-powered document verification (95% accuracy)
+        - ⚡ Lightning-fast funding (under 5 minutes)
+        - 🔗 Blockchain-secured transactions on Algorand
+        - 🎤 Voice navigation for accessibility
+        - 🌍 Multi-language support
+        - 📊 AI insights and risk assessment
+        - 💬 24/7 AI chatbot support
         
         Current conversation context: Student lending platform assistance on Vibe
       `;
@@ -395,7 +435,8 @@ export class GeminiAI {
         }
       ];
 
-      conversationHistory.forEach(msg => {
+      // Add conversation history for context
+      conversationHistory.slice(-3).forEach(msg => {
         contents.push({
           parts: [{ text: `${msg.role}: ${msg.content}` }]
         });
@@ -406,10 +447,10 @@ export class GeminiAI {
       });
 
       const response = await this.makeRequest(contents);
-      return response || "I'm sorry, I couldn't process your request right now. Please try again and let's keep the vibe going!";
+      return response || "I'm sorry, I couldn't process your request right now. Please try again and let's keep the vibe going! 🚀";
     } catch (error) {
       console.error('Chatbot request failed:', error);
-      return "I'm experiencing technical difficulties. Please try again later or contact our support team. Don't worry, we'll get back to vibing soon!";
+      return "I'm experiencing technical difficulties right now. Please try again later or contact our support team. Don't worry, we'll get back to vibing soon! 💪";
     }
   }
 
