@@ -380,6 +380,14 @@ export class PDFGenerator {
             margin-bottom: 25px; 
             page-break-inside: avoid;
         }
+        .section-title { 
+            font-size: 14pt; 
+            font-weight: bold; 
+            color: #059669; 
+            margin-bottom: 15px; 
+            border-left: 4px solid #059669; 
+            padding-left: 15px; 
+        }
         .loan-details { 
             background-color: #f0fdf4; 
             padding: 20px; 
@@ -406,6 +414,22 @@ export class PDFGenerator {
             margin: 20px 0;
             border-radius: 5px;
         }
+        .terms-list { 
+            list-style-type: decimal; 
+            margin-left: 20px; 
+            text-align: justify;
+        }
+        .terms-list li { 
+            margin-bottom: 15px; 
+            page-break-inside: avoid;
+        }
+        .legal-section {
+            background-color: #f1f5f9;
+            border: 2px solid #64748b;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
         .footer { 
             text-align: center; 
             margin-top: 40px; 
@@ -426,6 +450,17 @@ export class PDFGenerator {
         }
         .page-break {
             page-break-before: always;
+        }
+        .legal-notice {
+            background-color: #fee2e2;
+            border: 2px solid #dc2626;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .legal-notice h3 {
+            color: #dc2626;
+            margin-top: 0;
         }
     </style>
 </head>
@@ -488,56 +523,138 @@ export class PDFGenerator {
 
     <div class="page-break"></div>
 
-    <div class="terms-section">
-        <h3 style="color: #92400e; margin-top: 0;">TERMS AND CONDITIONS OF SANCTION</h3>
+    <div class="section">
+        <div class="section-title">COMPREHENSIVE TERMS AND CONDITIONS</div>
         
-        <ol style="text-align: justify;">
-            <li><strong>Disbursement:</strong> The sanctioned amount of ${this.formatCurrency(funded_amount)} will be disbursed to your registered bank account within 24-48 hours of this sanction letter, subject to final verification.</li>
+        <div class="terms-section">
+            <h3 style="color: #92400e; margin-top: 0;">1. LOAN DISBURSEMENT AND REPAYMENT TERMS</h3>
             
-            <li><strong>Repayment Schedule:</strong> You are required to repay the total amount of ${this.formatCurrency(totalRepayment)} on or before ${this.formatDate(repaymentDate)}. Early repayment is allowed without penalty.</li>
+            <ol class="terms-list">
+                <li><strong>Disbursement:</strong> The sanctioned amount of ${this.formatCurrency(funded_amount)} will be disbursed to your registered bank account within 24-48 hours of this sanction letter, subject to final verification and completion of all documentation requirements.</li>
+                
+                <li><strong>Repayment Schedule:</strong> You are required to repay the total amount of ${this.formatCurrency(totalRepayment)} on or before ${this.formatDate(repaymentDate)}. The repayment includes principal amount of ${this.formatCurrency(funded_amount)} plus interest of ${this.formatCurrency(totalRepayment - funded_amount)}.</li>
+                
+                <li><strong>Interest Calculation:</strong> Interest is calculated on simple interest basis at ${interest_rate}% per annum for ${tenure_days} days. The effective interest amount is ${this.formatCurrency(totalRepayment - funded_amount)}.</li>
+                
+                <li><strong>Platform Charges:</strong> A platform fee of ${terms.platform_fee_percentage}% (₹${(funded_amount * terms.platform_fee_percentage / 100).toFixed(2)}) will be deducted from the disbursed amount to cover operational costs, verification services, and blockchain transaction fees.</li>
+                
+                <li><strong>Late Payment Penalty:</strong> Any delay in repayment beyond the due date will attract a penalty of ${terms.late_fee_percentage}% per month on the outstanding amount. This penalty will be calculated on a daily basis and compounded monthly.</li>
+                
+                <li><strong>Prepayment Rights:</strong> You may prepay the loan in full or part without any prepayment penalty by giving 7 days written notice to the platform. Partial prepayments will reduce the outstanding principal proportionally.</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">2. LEGAL COMPLIANCE AND REGULATORY FRAMEWORK</div>
+        
+        <div class="legal-section">
+            <ol class="terms-list" start="7">
+                <li><strong>Regulatory Compliance:</strong> This loan sanction is governed by the Reserve Bank of India (RBI) guidelines for Peer-to-Peer Lending Platforms under the RBI (Reserve Bank) - Credit Information Companies Regulations, 2006, and the Information Technology Act, 2000. Vibe is registered with RBI under registration number ${company.rbiRegistration}.</li>
+                
+                <li><strong>Legal Jurisdiction:</strong> This agreement shall be governed by and construed in accordance with the laws of India. Any disputes arising out of or in connection with this agreement shall be subject to the exclusive jurisdiction of the courts in Mumbai, Maharashtra.</li>
+                
+                <li><strong>Data Protection and Privacy:</strong> Your personal and financial data will be processed in accordance with the Information Technology (Reasonable Security Practices and Procedures and Sensitive Personal Data or Information) Rules, 2011, and the Digital Personal Data Protection Act, 2023. We maintain strict confidentiality and security protocols.</li>
+                
+                <li><strong>Blockchain Security:</strong> All transaction records, agreements, and repayment schedules are immutably recorded on the Algorand blockchain for transparency, security, and dispute resolution. This creates a permanent, tamper-proof record of all loan-related activities.</li>
+                
+                <li><strong>Credit Information Sharing:</strong> Your loan performance data may be shared with Credit Information Companies (CICs) as per RBI guidelines. Timely repayment will positively impact your credit score, while defaults will be reported and may affect future borrowing capacity.</li>
+                
+                <li><strong>Anti-Money Laundering (AML) Compliance:</strong> This transaction is subject to AML and Know Your Customer (KYC) regulations. Any suspicious activities will be reported to relevant authorities as per the Prevention of Money Laundering Act, 2002.</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="page-break"></div>
+
+    <div class="section">
+        <div class="section-title">3. BORROWER RIGHTS, RESPONSIBILITIES AND PROTECTIONS</div>
+        
+        <ol class="terms-list" start="13">
+            <li><strong>Right to Information:</strong> You have the right to receive complete and accurate information about all loan terms, fees, charges, and conditions before loan disbursement. Any changes to terms require your explicit consent.</li>
             
-            <li><strong>Interest Calculation:</strong> Interest is calculated on simple interest basis at ${interest_rate}% per annum for ${tenure_days} days.</li>
+            <li><strong>Fair Treatment:</strong> You are entitled to fair and transparent treatment throughout the loan lifecycle. Any grievances can be escalated through our internal grievance redressal mechanism and subsequently to the RBI Ombudsman.</li>
             
-            <li><strong>Platform Charges:</strong> A platform fee of ${terms.platform_fee_percentage}% (₹${(funded_amount * terms.platform_fee_percentage / 100).toFixed(2)}) will be deducted from the disbursed amount.</li>
+            <li><strong>Privacy Rights:</strong> Your personal information will be kept confidential and used only for legitimate business purposes. You have the right to access, correct, and request deletion of your personal data as per applicable data protection laws.</li>
             
-            <li><strong>Late Payment:</strong> Any delay in repayment will attract a penalty of ${terms.late_fee_percentage}% per month on the outstanding amount.</li>
+            <li><strong>Responsible Borrowing:</strong> You acknowledge your responsibility to borrow only what you can reasonably repay and to use the funds solely for the stated purpose. Misuse of funds may result in immediate loan recall.</li>
             
-            <li><strong>Default Consequences:</strong> Non-repayment may result in legal action, credit score impact, and reporting to credit bureaus.</li>
+            <li><strong>Default Consequences:</strong> In case of default, the following actions may be taken: (a) Reporting to credit bureaus affecting your credit score, (b) Legal proceedings for recovery, (c) Additional penalty charges, (d) Suspension from the platform, (e) Recovery through legal means including asset attachment where applicable.</li>
             
-            <li><strong>Prepayment:</strong> You may prepay the loan in full or part without any prepayment penalty by giving 7 days notice.</li>
-            
-            <li><strong>Governing Law:</strong> This sanction is governed by Indian laws and RBI guidelines for P2P lending.</li>
+            <li><strong>Force Majeure:</strong> Neither party shall be liable for any failure or delay in performance due to circumstances beyond their reasonable control, including but not limited to acts of God, government actions, natural disasters, pandemics, or technical failures.</li>
         </ol>
     </div>
 
     <div class="section">
-        <h3 style="color: #059669;">LENDER INFORMATION</h3>
-        <p><strong>Lender Name:</strong> ${lender.name}<br>
-        <strong>Lender Email:</strong> ${lender.email}<br>
-        <strong>Funding Date:</strong> ${this.formatDate(new Date())}<br>
-        <strong>Lender Agreement:</strong> The lender has agreed to provide the loan under the terms mentioned above.</p>
+        <div class="section-title">4. LENDER INFORMATION AND AGREEMENT</div>
+        
+        <div style="background-color: #f0f9ff; padding: 20px; border: 2px solid #0ea5e9; border-radius: 5px;">
+            <h3 style="color: #0ea5e9; margin-top: 0;">Lender Details and Commitment</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                    <td style="padding: 8px; border-bottom: 1px solid #bae6fd; font-weight: bold; width: 30%;">Lender Name:</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #bae6fd;">${lender.name}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; border-bottom: 1px solid #bae6fd; font-weight: bold;">Lender Email:</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #bae6fd;">${lender.email}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; border-bottom: 1px solid #bae6fd; font-weight: bold;">Funding Date:</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #bae6fd;">${this.formatDate(new Date())}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; border-bottom: 1px solid #bae6fd; font-weight: bold;">Lender Agreement Status:</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #bae6fd;"><strong>Confirmed and Digitally Signed</strong></td>
+                </tr>
+            </table>
+            
+            <p style="margin-top: 15px;"><strong>Lender Commitment:</strong> The lender has agreed to provide the loan amount under the terms mentioned in this sanction letter and has digitally signed the lending agreement through our secure platform.</p>
+        </div>
     </div>
 
     <div class="section">
-        <h3 style="color: #059669;">NEXT STEPS</h3>
-        <ol>
-            <li>This sanction letter serves as confirmation of loan approval</li>
-            <li>Loan amount will be disbursed to your registered bank account</li>
-            <li>You will receive a disbursement confirmation via email and SMS</li>
-            <li>Repayment reminders will be sent before the due date</li>
-            <li>All documents are available in your Vibe dashboard</li>
+        <div class="section-title">5. NEXT STEPS AND IMPORTANT INSTRUCTIONS</div>
+        
+        <ol class="terms-list" start="19">
+            <li><strong>Document Verification:</strong> Ensure all your KYC documents are up-to-date and verified on the platform before loan disbursement.</li>
+            
+            <li><strong>Bank Account Verification:</strong> Confirm that your registered bank account details are accurate as the loan amount will be transferred to this account only.</li>
+            
+            <li><strong>Loan Utilization:</strong> Use the loan amount strictly for the purpose mentioned in your application. Any deviation may result in immediate loan recall.</li>
+            
+            <li><strong>Repayment Setup:</strong> Set up automatic repayment instructions with your bank to ensure timely repayment and avoid late fees.</li>
+            
+            <li><strong>Communication:</strong> Keep your contact information updated on the platform. All important communications regarding your loan will be sent to your registered email and phone number.</li>
+            
+            <li><strong>Platform Access:</strong> Regularly check your Vibe dashboard for loan status updates, repayment reminders, and important notifications.</li>
         </ol>
     </div>
 
-    <div class="section">
-        <p>We thank you for choosing Vibe P2P Lending Platform and wish you success in your endeavors.</p>
+    <div class="legal-notice">
+        <h3>⚠️ IMPORTANT LEGAL DISCLAIMERS</h3>
         
-        <p>For any queries, please contact our customer support at ${company.email} or ${company.phone}.</p>
+        <p><strong>RBI Disclaimer:</strong> Reserve Bank of India does not accept any responsibility for the correctness of any of the statements or representations made or opinions expressed by Vibe, and does not provide any assurance of repayment of the loans lent on it.</p>
+        
+        <p><strong>Risk Disclosure:</strong> Peer-to-peer lending involves inherent financial risks. Interest rates and loan terms are determined by market forces and mutual agreement between borrowers and lenders.</p>
+        
+        <p><strong>Platform Limitation:</strong> Vibe acts as an intermediary platform facilitating connections between borrowers and lenders. We do not guarantee loan approvals, disbursements, or repayments.</p>
+        
+        <p><strong>Legal Binding:</strong> This sanction letter creates a legally binding obligation upon acceptance. By accepting the loan disbursement, you agree to be bound by all terms and conditions mentioned herein.</p>
+    </div>
+
+    <div class="section">
+        <p>We thank you for choosing Vibe P2P Lending Platform and wish you success in your endeavors. We are committed to providing you with excellent service throughout your loan journey.</p>
+        
+        <p>For any queries, clarifications, or support, please contact our customer service team at ${company.email} or call us at ${company.phone} during business hours (10 AM to 5 PM, Monday to Friday).</p>
         
         <p><strong>Yours sincerely,</strong></p>
         <br>
-        <p><strong>Vibe P2P Lending Platform</strong><br>
-        <em>Authorized Signatory</em></p>
+        <div style="border: 2px solid #059669; padding: 15px; display: inline-block; border-radius: 5px;">
+            <p style="margin: 0;"><strong>Vibe P2P Lending Platform</strong></p>
+            <p style="margin: 5px 0 0 0;"><em>Authorized Signatory</em></p>
+            <p style="margin: 5px 0 0 0; font-size: 10pt;">Digitally Signed and Verified</p>
+        </div>
     </div>
 
     <div class="footer">
@@ -628,6 +745,14 @@ export class PDFGenerator {
             margin-bottom: 25px; 
             page-break-inside: avoid;
         }
+        .section-title { 
+            font-size: 14pt; 
+            font-weight: bold; 
+            color: #7c3aed; 
+            margin-bottom: 15px; 
+            border-left: 4px solid #7c3aed; 
+            padding-left: 15px; 
+        }
         .loan-details { 
             background-color: #faf5ff; 
             padding: 20px; 
@@ -650,6 +775,22 @@ export class PDFGenerator {
         .impact-section {
             background-color: #f0f9ff;
             border: 2px solid #0ea5e9;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .terms-list { 
+            list-style-type: decimal; 
+            margin-left: 20px; 
+            text-align: justify;
+        }
+        .terms-list li { 
+            margin-bottom: 15px; 
+            page-break-inside: avoid;
+        }
+        .legal-section {
+            background-color: #f1f5f9;
+            border: 2px solid #64748b;
             padding: 20px;
             margin: 20px 0;
             border-radius: 5px;
@@ -682,6 +823,17 @@ export class PDFGenerator {
             margin: 20px 0;
             border-radius: 5px;
             font-size: 10pt;
+        }
+        .legal-notice {
+            background-color: #fee2e2;
+            border: 2px solid #dc2626;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .legal-notice h3 {
+            color: #dc2626;
+            margin-top: 0;
         }
     </style>
 </head>
@@ -738,6 +890,28 @@ export class PDFGenerator {
 
     <div class="page-break"></div>
 
+    <div class="section">
+        <div class="section-title">COMPREHENSIVE TERMS AND CONDITIONS</div>
+        
+        <div class="legal-section">
+            <h3 style="color: #64748b; margin-top: 0;">Legal Framework and Compliance</h3>
+            
+            <ol class="terms-list">
+                <li><strong>Regulatory Compliance:</strong> This lending transaction is conducted under the regulatory framework established by the Reserve Bank of India (RBI) for Peer-to-Peer Lending Platforms. Vibe is registered with RBI under registration number ${company.rbiRegistration} and operates in full compliance with applicable regulations.</li>
+                
+                <li><strong>Legal Documentation:</strong> This certificate serves as legal proof of your lending transaction and can be used for tax purposes, financial records, and regulatory compliance. All transaction details are immutably recorded on the Algorand blockchain for transparency and verification.</li>
+                
+                <li><strong>Lender Rights and Protections:</strong> As a verified lender, you are entitled to: (a) Timely repayment as per agreed terms, (b) Legal recourse in case of borrower default, (c) Transparent communication regarding loan status, (d) Protection under applicable consumer protection laws, (e) Access to borrower's credit information for informed decision-making.</li>
+                
+                <li><strong>Risk Acknowledgment:</strong> You acknowledge that peer-to-peer lending involves inherent financial risks including but not limited to: (a) Risk of borrower default, (b) Interest rate fluctuations, (c) Platform operational risks, (d) Regulatory changes affecting P2P lending. Past performance does not guarantee future returns.</li>
+                
+                <li><strong>Tax Implications:</strong> Interest income earned from this lending transaction is subject to applicable income tax laws. You are responsible for reporting this income in your tax returns. We recommend consulting with a tax advisor for proper compliance.</li>
+                
+                <li><strong>Data Protection:</strong> Your personal and financial information is protected under the Information Technology (Reasonable Security Practices and Procedures and Sensitive Personal Data or Information) Rules, 2011, and the Digital Personal Data Protection Act, 2023.</li>
+            </ol>
+        </div>
+    </div>
+
     <div class="impact-section">
         <h3 style="color: #0ea5e9; margin-top: 0;">🌟 YOUR SOCIAL IMPACT</h3>
         <p>By lending ${this.formatCurrency(funded_amount)} to ${borrower.name}, you have:</p>
@@ -751,19 +925,28 @@ export class PDFGenerator {
     </div>
 
     <div class="section">
-        <h3 style="color: #7c3aed;">LENDER RIGHTS AND PROTECTIONS</h3>
-        <ol>
-            <li><strong>Legal Protection:</strong> This transaction is protected under RBI guidelines for P2P lending platforms</li>
-            <li><strong>Blockchain Security:</strong> Transaction details are immutably recorded on Algorand blockchain</li>
-            <li><strong>Repayment Tracking:</strong> Automated reminders and tracking for borrower repayments</li>
-            <li><strong>Default Protection:</strong> Legal recourse available in case of borrower default</li>
-            <li><strong>Platform Support:</strong> 24/7 customer support for any queries or issues</li>
-            <li><strong>Transparency:</strong> Complete visibility into borrower profile and loan utilization</li>
+        <div class="section-title">LENDER RIGHTS AND PROTECTIONS</div>
+        
+        <ol class="terms-list" start="7">
+            <li><strong>Legal Protection:</strong> This transaction is protected under RBI guidelines for P2P lending platforms and Indian contract law. You have legal recourse in case of borrower default or platform issues.</li>
+            
+            <li><strong>Blockchain Security:</strong> Transaction details are immutably recorded on Algorand blockchain, providing transparent and tamper-proof evidence of the lending agreement.</li>
+            
+            <li><strong>Repayment Tracking:</strong> Automated reminders and tracking systems ensure borrower compliance with repayment schedules. You will receive regular updates on loan status.</li>
+            
+            <li><strong>Default Protection:</strong> In case of borrower default, the platform will initiate recovery proceedings including legal action, credit bureau reporting, and asset recovery where applicable.</li>
+            
+            <li><strong>Platform Support:</strong> 24/7 customer support is available for any queries, disputes, or issues related to your lending transaction.</li>
+            
+            <li><strong>Transparency:</strong> Complete visibility into borrower profile, loan utilization, and repayment history ensures informed lending decisions.</li>
+            
+            <li><strong>Grievance Redressal:</strong> Access to internal grievance redressal mechanism and escalation to RBI Ombudsman if required.</li>
         </ol>
     </div>
 
     <div class="section">
-        <h3 style="color: #7c3aed;">INVESTMENT SUMMARY</h3>
+        <div class="section-title">INVESTMENT SUMMARY AND ANALYSIS</div>
+        
         <div style="background-color: #f8fafc; padding: 15px; border-radius: 5px; border: 1px solid #e2e8f0;">
             <table style="width: 100%;">
                 <tr>
@@ -796,8 +979,21 @@ export class PDFGenerator {
         <p><em>This transaction is permanently recorded on the blockchain and cannot be altered or deleted.</em></p>
     </div>
 
+    <div class="legal-notice">
+        <h3>⚠️ IMPORTANT LEGAL DISCLAIMERS</h3>
+        
+        <p><strong>RBI Disclaimer:</strong> Reserve Bank of India does not accept any responsibility for the correctness of any of the statements or representations made or opinions expressed by Vibe, and does not provide any assurance of repayment of the loans lent on it.</p>
+        
+        <p><strong>Investment Risk:</strong> Peer-to-peer lending involves significant financial risks. There is no guarantee of repayment, and you may lose part or all of your invested amount. Past performance does not indicate future results.</p>
+        
+        <p><strong>Platform Limitation:</strong> Vibe acts as an intermediary platform and does not guarantee loan repayments. We facilitate connections between borrowers and lenders but are not party to the loan agreement.</p>
+        
+        <p><strong>Legal Binding:</strong> This certificate represents a legally binding lending transaction. By participating in this transaction, you acknowledge understanding and acceptance of all associated risks and terms.</p>
+    </div>
+
     <div class="section">
-        <h3 style="color: #7c3aed;">CERTIFICATE VALIDATION</h3>
+        <div class="section-title">CERTIFICATE VALIDATION</div>
+        
         <p>This certificate is digitally signed and can be verified through:</p>
         <ul>
             <li>Vibe Platform Dashboard: ${company.website}/verify</li>
