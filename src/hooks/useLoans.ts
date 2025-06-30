@@ -90,72 +90,77 @@ export function useLoans() {
 
       console.log('✅ Loans fetched from Supabase:', data?.length || 0)
 
-      const formattedLoans: LoanRequest[] = (data || []).map((loan: any) => ({
-        id: loan.id,
-        borrowerId: loan.borrower_id,
-        borrower: {
-          id: loan.profiles?.id || loan.borrower_id,
-          name: loan.profiles?.name || 'Unknown User',
-          email: loan.profiles?.email || '',
-          avatar: loan.profiles?.avatar_url || 'https://images.pexels.com/photos/771742/pexels-photo-771742.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-          isVerified: loan.profiles?.is_verified || false,
-          badges: [],
-          stats: {
-            totalLoansGiven: 0,
-            totalLoansTaken: 0,
-            successfulRepayments: 0,
-            averageRating: 0,
-            totalAmountLent: 0,
-            totalAmountBorrowed: 0
-          },
-          createdAt: new Date(),
-          language: 'en',
-          accessibilitySettings: {
-            voiceNavigation: false,
-            highContrast: false,
-            screenReader: false,
-            fontSize: 'medium'
-          }
-        },
-        title: loan.title,
-        description: loan.description,
-        amount: loan.amount,
-        currency: loan.currency || 'INR',
-        interestRate: loan.interest_rate,
-        tenure: loan.tenure_days,
-        purpose: loan.purpose,
-        status: loan.status,
-        fundingProgress: loan.amount > 0 ? (loan.total_funded / loan.amount) * 100 : 0,
-        totalFunded: loan.total_funded || 0,
-        lenders: (loan.loan_fundings || []).map((funding: any) => ({
-          id: funding.id,
-          user: {
-            id: funding.profiles?.id || '',
-            name: funding.profiles?.name || 'Anonymous',
-            avatar: funding.profiles?.avatar_url || 'https://images.pexels.com/photos/771742/pexels-photo-771742.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop'
-          },
-          amount: funding.amount,
-          fundedAt: new Date(funding.funded_at)
-        })),
-        createdAt: new Date(loan.created_at),
-        images: loan.images || [],
-        medicalVerification: loan.medical_verification,
-        likes: (loan.loan_interactions || []).filter((i: any) => i.type === 'like').length,
-        comments: (loan.loan_interactions || [])
-          .filter((i: any) => i.type === 'comment')
-          .map((comment: any) => ({
-            id: comment.id,
-            userId: comment.profiles?.id || '',
-            user: {
-              id: comment.profiles?.id || '',
-              name: comment.profiles?.name || 'Anonymous',
-              avatar: comment.profiles?.avatar_url || 'https://images.pexels.com/photos/771742/pexels-photo-771742.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop'
+      const formattedLoans: LoanRequest[] = (data || []).map((loan: any) => {
+        // Get borrower profile data with proper fallbacks
+        const borrowerProfile = loan.profiles || {}
+        
+        return {
+          id: loan.id,
+          borrowerId: loan.borrower_id,
+          borrower: {
+            id: borrowerProfile.id || loan.borrower_id,
+            name: borrowerProfile.name || 'Student User',
+            email: borrowerProfile.email || 'user@example.com',
+            avatar: borrowerProfile.avatar_url || 'https://images.pexels.com/photos/771742/pexels-photo-771742.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+            isVerified: borrowerProfile.is_verified || false,
+            badges: [],
+            stats: {
+              totalLoansGiven: 0,
+              totalLoansTaken: 0,
+              successfulRepayments: 0,
+              averageRating: 0,
+              totalAmountLent: 0,
+              totalAmountBorrowed: 0
             },
-            content: comment.content,
-            createdAt: new Date(comment.created_at)
+            createdAt: new Date(),
+            language: 'en',
+            accessibilitySettings: {
+              voiceNavigation: false,
+              highContrast: false,
+              screenReader: false,
+              fontSize: 'medium'
+            }
+          },
+          title: loan.title,
+          description: loan.description,
+          amount: loan.amount,
+          currency: loan.currency || 'INR',
+          interestRate: loan.interest_rate,
+          tenure: loan.tenure_days,
+          purpose: loan.purpose,
+          status: loan.status,
+          fundingProgress: loan.amount > 0 ? (loan.total_funded / loan.amount) * 100 : 0,
+          totalFunded: loan.total_funded || 0,
+          lenders: (loan.loan_fundings || []).map((funding: any) => ({
+            id: funding.id,
+            user: {
+              id: funding.profiles?.id || '',
+              name: funding.profiles?.name || 'Anonymous Lender',
+              avatar: funding.profiles?.avatar_url || 'https://images.pexels.com/photos/771742/pexels-photo-771742.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop'
+            },
+            amount: funding.amount,
+            fundedAt: new Date(funding.funded_at)
           })),
-        shares: (loan.loan_interactions || []).filter((i: any) => i.type === 'share').length
-      }))
+          createdAt: new Date(loan.created_at),
+          images: loan.images || [],
+          medicalVerification: loan.medical_verification,
+          likes: (loan.loan_interactions || []).filter((i: any) => i.type === 'like').length,
+          comments: (loan.loan_interactions || [])
+            .filter((i: any) => i.type === 'comment')
+            .map((comment: any) => ({
+              id: comment.id,
+              userId: comment.profiles?.id || '',
+              user: {
+                id: comment.profiles?.id || '',
+                name: comment.profiles?.name || 'Anonymous',
+                avatar: comment.profiles?.avatar_url || 'https://images.pexels.com/photos/771742/pexels-photo-771742.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop'
+              },
+              content: comment.content,
+              createdAt: new Date(comment.created_at)
+            })),
+          shares: (loan.loan_interactions || []).filter((i: any) => i.type === 'share').length
+        }
+      })
 
       // If no data from Supabase, use mock data
       if (formattedLoans.length === 0) {

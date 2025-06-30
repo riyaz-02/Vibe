@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle, Edit3, Star, TrendingUp, Award, Shield, Camera, User, Mail, Phone, Calendar } from 'lucide-react';
+import { CheckCircle, Edit3, Star, TrendingUp, Award, Shield, Camera, User, Mail, Phone, Calendar, Save, X, Lightbulb, Target, Users, DollarSign, Clock, Eye, Settings } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { useAuth } from '../../hooks/useAuth';
 import { useTranslation } from '../../utils/translations';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../lib/supabase';
 import { mockUsers } from '../../utils/mockData';
+import toast from 'react-hot-toast';
 
 const Profile: React.FC = () => {
   const { currentLanguage, currentUser, setCurrentUser } = useStore();
@@ -13,15 +14,86 @@ const Profile: React.FC = () => {
   const t = useTranslation(currentLanguage);
   const [profileData, setProfileData] = useState(currentUser || mockUsers[0]);
   const [loading, setLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: '',
+    phone: '',
+    language: 'en'
+  });
+  const [userLoans, setUserLoans] = useState([]);
+  const [showBadgeTooltip, setShowBadgeTooltip] = useState<string | null>(null);
+
+  // Badge criteria and rules
+  const badgeCriteria = {
+    'first-loan': {
+      name: 'First Loan',
+      description: 'Posted your first loan request',
+      icon: '🎯',
+      category: 'borrower',
+      criteria: 'Post your first loan request on the platform',
+      points: 10
+    },
+    'timely-repayer': {
+      name: 'Timely Repayer',
+      description: 'Repaid all loans on time',
+      icon: '🏆',
+      category: 'borrower',
+      criteria: 'Repay 3+ loans without any delays',
+      points: 50
+    },
+    'generous-lender': {
+      name: 'Generous Lender',
+      description: 'Funded 10+ loans',
+      icon: '💫',
+      category: 'lender',
+      criteria: 'Successfully fund 10 or more loan requests',
+      points: 100
+    },
+    'impact-star': {
+      name: 'Impact Star',
+      description: 'Funded medical/accessibility loans',
+      icon: '⭐',
+      category: 'community',
+      criteria: 'Fund 5+ medical or accessibility-related loans',
+      points: 75
+    },
+    'verified-member': {
+      name: 'Verified Member',
+      description: 'Completed identity verification',
+      icon: '✅',
+      category: 'community',
+      criteria: 'Complete identity verification process',
+      points: 25
+    },
+    'community-helper': {
+      name: 'Community Helper',
+      description: 'Active in community discussions',
+      icon: '🤝',
+      category: 'community',
+      criteria: 'Post 50+ helpful comments and interactions',
+      points: 30
+    }
+  };
 
   useEffect(() => {
     if (user) {
       fetchProfileData();
+      fetchUserLoans();
     } else {
       setProfileData(mockUsers[0]);
       setLoading(false);
     }
   }, [user]);
+
+  useEffect(() => {
+    if (profileData) {
+      setEditForm({
+        name: profileData.name,
+        phone: profileData.phone || '',
+        language: profileData.language
+      });
+    }
+  }, [profileData]);
 
   const fetchProfileData = async () => {
     try {
@@ -70,11 +142,20 @@ const Profile: React.FC = () => {
       const totalLoansTaken = loanRequests?.length || 0;
       const successfulRepayments = loanRequests?.filter(req => req.status === 'completed').length || 0;
 
+      // Check and award badges
+      await checkAndAwardBadges(user.id, {
+        totalLoansGiven,
+        totalLoansTaken,
+        successfulRepayments,
+        isVerified: profile?.is_verified || false
+      });
+
       if (profile) {
         const formattedProfile = {
           id: profile.id,
           name: profile.name,
           email: profile.email,
+          phone: profile.phone,
           avatar: profile.avatar_url || 'https://images.pexels.com/photos/771742/pexels-photo-771742.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
           isVerified: profile.is_verified || false,
           badges: profile.badges || [],
@@ -104,6 +185,7 @@ const Profile: React.FC = () => {
           id: user.id,
           name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
           email: user.email || '',
+          phone: '',
           avatar: 'https://images.pexels.com/photos/771742/pexels-photo-771742.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
           isVerified: false,
           badges: [],
@@ -137,21 +219,178 @@ const Profile: React.FC = () => {
     }
   };
 
+  const fetchUserLoans = async () => {
+    try {
+      if (!supabase || !user) return;
+
+      const { data: loans, error } = await supabase
+        .from('loan_requests')
+        .select(`
+          *,
+          loan_fundings(amount, funded_at)
+        `)
+        .eq('borrower_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching user loans:', error);
+        return;
+      }
+
+      setUserLoans(loans || []);
+    } catch (error) {
+      console.error('Error fetching user loans:', error);
+    }
+  };
+
+  const checkAndAwardBadges = async (userId: string, stats: any) => {
+    try {
+      if (!supabase) return;
+
+      const badgesToAward = [];
+
+      // Check for first loan badge
+      if (stats.totalLoansTaken >= 1) {
+        badgesToAward.push({
+          user_id: userId,
+          name: badgeCriteria['first-loan'].name,
+          description: badgeCriteria['first-loan'].description,
+          icon: badgeCriteria['first-loan'].icon,
+          category: badgeCriteria['first-loan'].category
+        });
+      }
+
+      // Check for timely repayer badge
+      if (stats.successfulRepayments >= 3) {
+        badgesToAward.push({
+          user_id: userId,
+          name: badgeCriteria['timely-repayer'].name,
+          description: badgeCriteria['timely-repayer'].description,
+          icon: badgeCriteria['timely-repayer'].icon,
+          category: badgeCriteria['timely-repayer'].category
+        });
+      }
+
+      // Check for generous lender badge
+      if (stats.totalLoansGiven >= 10) {
+        badgesToAward.push({
+          user_id: userId,
+          name: badgeCriteria['generous-lender'].name,
+          description: badgeCriteria['generous-lender'].description,
+          icon: badgeCriteria['generous-lender'].icon,
+          category: badgeCriteria['generous-lender'].category
+        });
+      }
+
+      // Check for verified member badge
+      if (stats.isVerified) {
+        badgesToAward.push({
+          user_id: userId,
+          name: badgeCriteria['verified-member'].name,
+          description: badgeCriteria['verified-member'].description,
+          icon: badgeCriteria['verified-member'].icon,
+          category: badgeCriteria['verified-member'].category
+        });
+      }
+
+      // Award badges that don't exist yet
+      for (const badge of badgesToAward) {
+        const { error } = await supabase
+          .from('badges')
+          .upsert(badge, { onConflict: 'user_id,name' });
+
+        if (error) {
+          console.error('Error awarding badge:', error);
+        }
+      }
+    } catch (error) {
+      console.error('Error checking badges:', error);
+    }
+  };
+
+  const handleEditProfile = async () => {
+    try {
+      if (!supabase || !user) {
+        toast.error('Profile update not available in demo mode');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          name: editForm.name,
+          phone: editForm.phone,
+          language: editForm.language,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setProfileData(prev => ({
+        ...prev,
+        name: editForm.name,
+        phone: editForm.phone,
+        language: editForm.language
+      }));
+
+      setCurrentUser({
+        ...profileData,
+        name: editForm.name,
+        phone: editForm.phone,
+        language: editForm.language
+      });
+
+      setIsEditing(false);
+      toast.success('Profile updated successfully!');
+    } catch (error: any) {
+      console.error('Error updating profile:', error);
+      toast.error('Failed to update profile');
+    }
+  };
+
   const BadgeCard = ({ badge }: any) => (
     <motion.div
-      className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg p-4 border border-blue-200"
+      className="relative bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg p-4 border border-blue-200 cursor-pointer"
       whileHover={{ scale: 1.02 }}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
+      onMouseEnter={() => setShowBadgeTooltip(badge.name)}
+      onMouseLeave={() => setShowBadgeTooltip(null)}
     >
       <div className="text-center">
         <div className="text-3xl mb-2">{badge.icon}</div>
         <h4 className="font-semibold text-gray-900 mb-1">{badge.name}</h4>
         <p className="text-sm text-gray-600">{badge.description}</p>
         <div className="text-xs text-gray-500 mt-2">
-          Earned {badge.earnedAt.toLocaleDateString()}
+          Earned {new Date(badge.earnedAt || badge.earned_at).toLocaleDateString()}
         </div>
       </div>
+
+      {/* Tooltip */}
+      <AnimatePresence>
+        {showBadgeTooltip === badge.name && (
+          <motion.div
+            className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 bg-gray-900 text-white text-xs rounded-lg p-3 w-64 z-10"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+          >
+            <div className="flex items-start space-x-2">
+              <Lightbulb size={16} className="text-yellow-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <div className="font-semibold mb-1">How to earn:</div>
+                <div>{badgeCriteria[badge.name.toLowerCase().replace(/\s+/g, '-')]?.criteria || 'Complete specific actions on the platform'}</div>
+                <div className="text-yellow-400 text-xs mt-1">
+                  +{badgeCriteria[badge.name.toLowerCase().replace(/\s+/g, '-')]?.points || 10} points
+                </div>
+              </div>
+            </div>
+            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 
@@ -227,6 +466,12 @@ const Profile: React.FC = () => {
                   <Mail size={14} />
                   <span>{profileData.email}</span>
                 </p>
+                {profileData.phone && (
+                  <p className="text-gray-600 flex items-center space-x-1">
+                    <Phone size={14} />
+                    <span>{profileData.phone}</span>
+                  </p>
+                )}
                 <div className="flex items-center space-x-4 mt-2">
                   <div className="flex items-center space-x-1">
                     <Star className="text-yellow-500" size={16} fill="currentColor" />
@@ -242,7 +487,10 @@ const Profile: React.FC = () => {
             
             {/* Action Buttons */}
             <div className="flex space-x-3 mt-4 md:mt-0">
-              <button className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+              <button 
+                onClick={() => setIsEditing(true)}
+                className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
                 <Edit3 size={16} />
                 <span>Edit Profile</span>
               </button>
@@ -254,6 +502,89 @@ const Profile: React.FC = () => {
           </div>
         </div>
       </motion.div>
+
+      {/* Edit Profile Modal */}
+      <AnimatePresence>
+        {isEditing && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <motion.div
+              className="bg-white rounded-xl max-w-md w-full p-6"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-gray-900">Edit Profile</h2>
+                <button
+                  onClick={() => setIsEditing(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Full Name
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.name}
+                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Phone Number
+                  </label>
+                  <input
+                    type="tel"
+                    value={editForm.phone}
+                    onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="+91 XXXXX XXXXX"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Preferred Language
+                  </label>
+                  <select
+                    value={editForm.language}
+                    onChange={(e) => setEditForm({ ...editForm, language: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="en">English</option>
+                    <option value="hi">हिंदी</option>
+                    <option value="hinglish">Hinglish</option>
+                    <option value="bn">বাংলা</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex space-x-3 mt-6">
+                <button
+                  onClick={() => setIsEditing(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleEditProfile}
+                  className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center justify-center space-x-2"
+                >
+                  <Save size={16} />
+                  <span>Save Changes</span>
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Stats Grid */}
       <motion.div
@@ -291,6 +622,55 @@ const Profile: React.FC = () => {
         </div>
       </motion.div>
 
+      {/* My Loans Section */}
+      <motion.div
+        className="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15 }}
+      >
+        <h2 className="text-lg font-semibold text-gray-900 mb-6">My Loan Requests</h2>
+        
+        {userLoans.length > 0 ? (
+          <div className="space-y-4">
+            {userLoans.map((loan: any) => (
+              <div key={loan.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <h3 className="font-medium text-gray-900">{loan.title}</h3>
+                    <p className="text-sm text-gray-600 mt-1">{loan.description.substring(0, 100)}...</p>
+                    <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
+                      <span>₹{loan.amount.toLocaleString()}</span>
+                      <span>{loan.interest_rate}% interest</span>
+                      <span>{loan.tenure_days} days</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${
+                      loan.status === 'active' ? 'bg-blue-100 text-blue-800' :
+                      loan.status === 'funded' ? 'bg-green-100 text-green-800' :
+                      loan.status === 'completed' ? 'bg-purple-100 text-purple-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {loan.status}
+                    </div>
+                    <div className="text-sm text-gray-500 mt-1">
+                      {new Date(loan.created_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <DollarSign size={48} className="text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No loan requests yet</h3>
+            <p className="text-gray-600">Start by posting your first loan request!</p>
+          </div>
+        )}
+      </motion.div>
+
       {/* Badges Section */}
       <motion.div
         className="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
@@ -300,7 +680,28 @@ const Profile: React.FC = () => {
       >
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold text-gray-900">{t('profile.badges')}</h2>
-          <div className="text-sm text-gray-500">{profileData.badges.length} earned</div>
+          <div className="flex items-center space-x-2">
+            <div className="text-sm text-gray-500">{profileData.badges.length} earned</div>
+            <div className="relative">
+              <Lightbulb 
+                size={16} 
+                className="text-yellow-500 cursor-help"
+                onMouseEnter={() => setShowBadgeTooltip('criteria')}
+                onMouseLeave={() => setShowBadgeTooltip(null)}
+              />
+              {showBadgeTooltip === 'criteria' && (
+                <div className="absolute bottom-full right-0 mb-2 bg-gray-900 text-white text-xs rounded-lg p-3 w-64 z-10">
+                  <div className="font-semibold mb-2">Badge System:</div>
+                  <div className="space-y-1">
+                    <div>• Complete actions to earn badges</div>
+                    <div>• Each badge gives you points</div>
+                    <div>• Higher points = better reputation</div>
+                    <div>• Hover over badges to see criteria</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
         
         {profileData.badges.length > 0 ? (
@@ -314,6 +715,12 @@ const Profile: React.FC = () => {
             <Award size={48} className="text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No badges yet</h3>
             <p className="text-gray-600">Start lending or borrowing to earn your first badge!</p>
+            <div className="mt-4 text-sm text-gray-500">
+              <div className="flex items-center justify-center space-x-1">
+                <Lightbulb size={14} className="text-yellow-500" />
+                <span>Tip: Complete identity verification to earn your first badge</span>
+              </div>
+            </div>
           </div>
         )}
       </motion.div>
@@ -325,7 +732,10 @@ const Profile: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
       >
-        <h2 className="text-lg font-semibold text-gray-900 mb-6">Accessibility Settings</h2>
+        <div className="flex items-center space-x-2 mb-6">
+          <Settings size={20} className="text-gray-600" />
+          <h2 className="text-lg font-semibold text-gray-900">Accessibility Settings</h2>
+        </div>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
