@@ -16,6 +16,7 @@ interface BorrowedLoan {
   tenure_days: number;
   status: string;
   created_at: string;
+  updated_at?: string;
   total_funded: number;
   purpose: string;
   loan_fundings: Array<{
@@ -318,7 +319,7 @@ const BorrowedLoansCard: React.FC<BorrowedLoansCardProps> = ({ className = '' })
                       </div>
                       <div className="flex items-center space-x-1">
                         <Calendar size={14} />
-                        <span>{loan.status === 'completed' ? 'Repaid: ' + formatDate(new Date(loan.updated_at)) : 'Due: ' + formatDate(dueDate)}</span>
+                        <span>{loan.status === 'completed' ? 'Repaid: ' + formatDate(new Date(loan.updated_at || '')) : 'Due: ' + formatDate(dueDate)}</span>
                       </div>
                     </div>
                   </div>
