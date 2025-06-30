@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, DollarSign, Calendar, AlertCircle, CheckCircle, CreditCard, Download, FileText } from 'lucide-react';
+import { Clock, DollarSign, Calendar, AlertCircle, CheckCircle, CreditCard, FileText } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../hooks/useAuth';
 import { useWallet } from '../../hooks/useWallet';

@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { X, CreditCard, Shield, AlertTriangle, Upload, IndianRupee, Building, User, Phone } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../hooks/useAuth';
-import { geminiAI } from '../../utils/geminiAI';
 import toast from 'react-hot-toast';
 
 interface WithdrawFundsModalProps {

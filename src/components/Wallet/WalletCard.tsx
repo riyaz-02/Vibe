@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Wallet, Plus, Minus, CreditCard, TrendingUp, TrendingDown, Clock, RefreshCw, Download } from 'lucide-react';
+import { Wallet, Plus, Minus, CreditCard, TrendingUp, TrendingDown, Clock, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useWallet } from '../../hooks/useWallet';
 import AddFundsModal from './AddFundsModal';
