@@ -30,7 +30,7 @@ export interface UserSubscription {
 export interface UserOrder {
   customer_id: string;
   order_id: number;
-  checkout_session_id: string;
+  checkout_session_id: string | null;
   payment_intent_id: string;
   amount_subtotal: number;
   amount_total: number;

@@ -119,7 +119,10 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ className = '' }) => {
                     Order #{order.order_id}
                   </h4>
                   <p className="text-sm text-gray-500">
-                    {order.checkout_session_id.slice(0, 20)}...
+                    {order.checkout_session_id 
+                      ? `${order.checkout_session_id.slice(0, 20)}...`
+                      : 'Session ID unavailable'
+                    }
                   </p>
                 </div>
               </div>
