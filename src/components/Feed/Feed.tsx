@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Filter, Search, TrendingUp, LogIn, Zap, Heart, MessageCircle, Share2, Sparkles, Users, DollarSign, Award, Target, Clock, Star } from 'lucide-react';
+import { Plus, Filter, Search, TrendingUp, LogIn, Zap, Heart, MessageCircle, Share2, Sparkles, Users, DollarSign, Award, Target, Clock, Star, Calculator } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { useAuth } from '../../hooks/useAuth';
 import { useLoans } from '../../hooks/useLoans';
@@ -7,7 +7,7 @@ import { useTranslation } from '../../utils/translations';
 import LoanCard from './LoanCard';
 import PostLoanModal from '../Loans/PostLoanModal';
 import LoanCalculator from '../Loans/LoanCalculator';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 
 const Feed: React.FC = () => {
