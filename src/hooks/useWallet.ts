@@ -3,7 +3,9 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from './useAuth';
 import { loadStripe } from '@stripe/stripe-js';
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY!);
+// Check if Stripe key is available and valid
+const stripeKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+const stripePromise = stripeKey ? loadStripe(stripeKey) : null;
 
 export interface WalletTransaction {
   id: string;
@@ -38,16 +40,20 @@ export function useWallet() {
     try {
       setLoading(true);
       
-      // Get or create wallet
+      // First, try to get existing wallet
       let { data: walletData, error: walletError } = await supabase
         .from('wallets')
         .select('*')
         .eq('user_id', user.id)
         .eq('currency', 'INR')
-        .single();
+        .maybeSingle(); // Use maybeSingle instead of single to handle 0 rows gracefully
 
-      if (walletError && walletError.code === 'PGRST116') {
-        // Create wallet if doesn't exist
+      if (walletError) {
+        throw walletError;
+      }
+
+      // If no wallet exists, try to create one
+      if (!walletData) {
         const { data: newWallet, error: createError } = await supabase
           .from('wallets')
           .insert({
@@ -58,10 +64,24 @@ export function useWallet() {
           .select()
           .single();
 
-        if (createError) throw createError;
-        walletData = newWallet;
-      } else if (walletError) {
-        throw walletError;
+        if (createError) {
+          // If creation failed due to duplicate key (race condition), try to fetch again
+          if (createError.code === '23505') {
+            const { data: existingWallet, error: refetchError } = await supabase
+              .from('wallets')
+              .select('*')
+              .eq('user_id', user.id)
+              .eq('currency', 'INR')
+              .single();
+
+            if (refetchError) throw refetchError;
+            walletData = existingWallet;
+          } else {
+            throw createError;
+          }
+        } else {
+          walletData = newWallet;
+        }
       }
 
       setWallet(walletData);
@@ -89,6 +109,10 @@ export function useWallet() {
       throw new Error('User not authenticated');
     }
 
+    if (!stripePromise) {
+      throw new Error('Stripe is not configured. Please check your environment variables.');
+    }
+
     try {
       setLoading(true);
 
@@ -108,7 +132,7 @@ export function useWallet() {
 
       const { clientSecret } = response.data;
       const stripe = await stripePromise;
-      if (!stripe) throw new Error('Stripe not loaded');
+      if (!stripe) throw new Error('Failed to load Stripe');
 
       // Confirm payment
       const { error: paymentError, paymentIntent } = await stripe.confirmCardPayment(clientSecret);
@@ -186,6 +210,7 @@ export function useWallet() {
     loading,
     addFunds,
     repayLoan,
-    refetch: fetchWallet
+    refetch: fetchWallet,
+    stripeConfigured: !!stripePromise
   };
 }
