@@ -261,6 +261,6 @@ export const calculateLoanMetrics = (
     dailyRepayment: Math.round(dailyRepayment * 100) / 100,
     effectiveAPR: ((totalRepayment / principal - 1) * (365 / tenureDays) * 100).toFixed(2),
     platformFeePercentage,
-    platformFee: Math.round(platformFee * 100) / 10000
+    platformFee: Math.round(platformFee * 100) / 100
   };
 };
