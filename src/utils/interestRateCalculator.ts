@@ -90,25 +90,18 @@ const calculateInterestRateWithAI = async (params: LoanParameters): Promise<Inte
     interestRate = Math.max(3, Math.min(18, interestRate));
     interestRate = parseFloat(interestRate.toFixed(2)); // Round to 2 decimal places
     
-    // Calculate platform fee percentage based on interest rate tier
-    let platformFeePercentage = 0;
-    if (interestRate < 5) {
-      platformFeePercentage = 1.5;
-    } else if (interestRate < 10) {
-      platformFeePercentage = 3.5;
-    } else {
-      platformFeePercentage = 4.5;
-    }
+    // Fixed platform fee percentage of 4.5% of principal amount
+    const platformFeePercentage = 4.5;
     
     // Calculate repayment amount and platform fee
     const principal = params.amount;
     const timeInYears = params.tenureDays / 365;
     const interestAmount = principal * (interestRate / 100) * timeInYears;
-    const platformFee = interestAmount * (platformFeePercentage / 100);
+    const platformFee = principal * (platformFeePercentage / 100);
     const repaymentAmount = principal + interestAmount;
     
     // Generate explanation
-    const explanation = `Based on the loan parameters and risk assessment, an interest rate of ${interestRate}% has been calculated. This considers the loan amount (₹${params.amount}), tenure (${params.tenureDays} days), purpose (${params.purpose}), and other risk factors. The platform fee is ${platformFeePercentage}% of the interest amount.`;
+    const explanation = `Based on the loan parameters and risk assessment, an interest rate of ${interestRate}% has been calculated. This considers the loan amount (₹${params.amount}), tenure (${params.tenureDays} days), purpose (${params.purpose}), and other risk factors. The platform fee is ${platformFeePercentage}% of the principal amount.`;
     
     // Extract factors from AI recommendations and concerns
     const factors = [
@@ -208,28 +201,18 @@ const calculateInterestRateWithRules = (params: LoanParameters): InterestRateRes
   interestRate = Math.max(3, Math.min(18, interestRate));
   interestRate = parseFloat(interestRate.toFixed(2)); // Round to 2 decimal places
   
-  // Calculate platform fee percentage based on interest rate tier
-  let platformFeePercentage = 0;
-  if (interestRate < 5) {
-    platformFeePercentage = 1.5;
-    factors.push('Low interest rate tier: 1.5% platform fee');
-  } else if (interestRate < 10) {
-    platformFeePercentage = 3.5;
-    factors.push('Medium interest rate tier: 3.5% platform fee');
-  } else {
-    platformFeePercentage = 4.5;
-    factors.push('High interest rate tier: 4.5% platform fee');
-  }
+  // Fixed platform fee percentage of 4.5% of principal amount
+  const platformFeePercentage = 4.5;
   
   // Calculate repayment amount and platform fee
   const principal = params.amount;
   const timeInYears = params.tenureDays / 365;
   const interestAmount = principal * (interestRate / 100) * timeInYears;
-  const platformFee = interestAmount * (platformFeePercentage / 100);
+  const platformFee = principal * (platformFeePercentage / 100);
   const repaymentAmount = principal + interestAmount;
   
   // Generate explanation
-  const explanation = `Based on standard rules, an interest rate of ${interestRate}% has been calculated for this ${params.purpose} loan of ₹${params.amount} for ${params.tenureDays} days. The platform fee is ${platformFeePercentage}% of the interest amount.`;
+  const explanation = `Based on standard rules, an interest rate of ${interestRate}% has been calculated for this ${params.purpose} loan of ₹${params.amount} for ${params.tenureDays} days. The platform fee is ${platformFeePercentage}% of the principal amount.`;
   
   return {
     interestRate,
@@ -265,18 +248,11 @@ export const calculateLoanMetrics = (
   const totalRepayment = principal + interest;
   const dailyRepayment = totalRepayment / tenureDays;
   
-  // Calculate platform fee percentage based on interest rate tier
-  let platformFeePercentage = 0;
-  if (interestRate < 5) {
-    platformFeePercentage = 1.5;
-  } else if (interestRate < 10) {
-    platformFeePercentage = 3.5;
-  } else {
-    platformFeePercentage = 4.5;
-  }
+  // Fixed platform fee percentage of 4.5% of principal amount
+  const platformFeePercentage = 4.5;
   
   // Calculate platform fee
-  const platformFee = interest * (platformFeePercentage / 100);
+  const platformFee = principal * (platformFeePercentage / 100);
   
   return {
     principal,

@@ -72,35 +72,22 @@ serve(async (req) => {
       throw new Error("Insufficient wallet balance");
     }
 
-    // Calculate platform fee based on interest rate
-    // If interest rate < 5%, platform fee is 1.5% of interest
-    // If interest rate >= 5% and < 10%, platform fee is 3.5% of interest
-    // If interest rate >= 10%, platform fee is 4.5% of interest
-    const interestRate = loan.interest_rate;
-    let platformFeePercentage = 0;
-    
-    if (interestRate < 5) {
-      platformFeePercentage = 1.5;
-    } else if (interestRate < 10) {
-      platformFeePercentage = 3.5;
-    } else {
-      platformFeePercentage = 4.5;
-    }
+    // Calculate platform fee as 4.5% of principal amount
+    const platformFeePercentage = 4.5;
+    const principal = loan.total_funded;
+    const platformFee = principal * (platformFeePercentage / 100);
     
     // Calculate interest portion of repayment
-    const principal = loan.total_funded;
     const timeInYears = loan.tenure_days / 365;
-    const interestAmount = principal * (interestRate / 100) * timeInYears;
+    const interestAmount = principal * (loan.interest_rate / 100) * timeInYears;
     
-    // Calculate platform fee as percentage of interest
-    const platformFee = interestAmount * (platformFeePercentage / 100);
     const netAmountToLender = repaymentAmount - platformFee;
 
     console.log(`Loan repayment calculation:
       Principal: ${principal}
-      Interest Rate: ${interestRate}%
+      Interest Rate: ${loan.interest_rate}%
       Interest Amount: ${interestAmount}
-      Platform Fee Percentage: ${platformFeePercentage}% of interest
+      Platform Fee Percentage: ${platformFeePercentage}% of principal
       Platform Fee: ${platformFee}
       Net to Lender: ${netAmountToLender}
     `);

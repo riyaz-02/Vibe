@@ -491,7 +491,7 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
                                 <div className="bg-white p-2 rounded border border-blue-100">
                                   <div className="text-gray-500">Platform Fee</div>
                                   <div className="font-semibold text-gray-900">
-                                    {interestRateData.platformFeePercentage}% of interest
+                                    {interestRateData.platformFeePercentage}% of principal
                                   </div>
                                 </div>
                               </div>
@@ -785,7 +785,7 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
                               <div className="text-lg font-bold text-purple-600">
                                 ₹{loanMetrics.platformFee.toLocaleString('en-IN')}
                                 <span className="text-xs text-gray-500 ml-1">
-                                  ({loanMetrics.platformFeePercentage}% of interest)
+                                  ({loanMetrics.platformFeePercentage}% of principal)
                                 </span>
                               </div>
                             </div>
@@ -799,8 +799,8 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
                           <div className="mt-3 text-xs text-gray-600 flex items-start space-x-2">
                             <Info size={12} className="mt-0.5 flex-shrink-0" />
                             <div>
-                              The platform fee is calculated as a percentage of the interest amount based on the interest rate tier. 
-                              This fee is deducted from the interest paid by the borrower, not from the principal amount.
+                              The platform fee is calculated as a percentage of the principal amount.
+                              This fee is deducted from the principal amount when the loan is funded.
                             </div>
                           </div>
                         </div>

@@ -147,8 +147,8 @@ const TermsAcceptanceModal: React.FC<TermsAcceptanceModalProps> = ({
                   
                   <div className="flex justify-between items-center">
                     <div className="flex items-center space-x-1">
-                      <span className="text-gray-600">Platform Fee ({platformFeePercentage}% of interest):</span>
-                      <span className="text-xs text-blue-600 cursor-help" title="Platform fee is calculated as a percentage of the interest amount based on the interest rate tier">ⓘ</span>
+                      <span className="text-gray-600">Platform Fee ({platformFeePercentage}% of principal):</span>
+                      <span className="text-xs text-blue-600 cursor-help" title="Platform fee is calculated as a percentage of the principal amount">ⓘ</span>
                     </div>
                     <span className="font-medium">₹{platformFee.toLocaleString()}</span>
                   </div>
@@ -164,7 +164,7 @@ const TermsAcceptanceModal: React.FC<TermsAcceptanceModalProps> = ({
                 <div className="mt-3 text-xs text-gray-500 flex items-start space-x-2">
                   <AlertTriangle size={12} className="flex-shrink-0 mt-0.5" />
                   <div>
-                    The platform fee is deducted from the interest amount and does not affect your principal. 
+                    The platform fee is deducted from the principal amount and does not affect your interest. 
                     The total repayment amount is what you'll need to pay back by the due date.
                   </div>
                 </div>
@@ -196,11 +196,11 @@ const TermsAcceptanceModal: React.FC<TermsAcceptanceModalProps> = ({
                     <div>
                       <h4 className="font-medium text-gray-900">Platform Fees</h4>
                       <p className="text-sm text-gray-600">
-                        Platform fee is calculated as a percentage of the interest amount based on the interest rate tier:
+                        Platform fee is calculated as a percentage of the principal amount based on the interest rate tier:
                         <ul className="mt-1 ml-4 list-disc">
-                          <li>Interest rate &lt; 5%: 1.5% of interest</li>
-                          <li>Interest rate 5-10%: 3.5% of interest</li>
-                          <li>Interest rate &gt; 10%: 4.5% of interest</li>
+                          <li>Fixed 4.5% of principal amount</li>
+                          <li>This fee is deducted from the principal amount when the loan is funded</li>
+                          <li>The fee covers verification, processing, and blockchain security</li>
                         </ul>
                       </p>
                     </div>

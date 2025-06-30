@@ -210,7 +210,7 @@ const LoanCalculator: React.FC<LoanCalculatorProps> = ({ onCalculated, className
                 <div className="text-xl font-bold text-purple-600">
                   {formatCurrency(result.platformFee)}
                   <span className="text-xs text-gray-500 ml-1">
-                    ({result.platformFeePercentage}% of interest)
+                    ({result.platformFeePercentage}% of principal)
                   </span>
                 </div>
               </div>
