@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Check, Star, Zap, Shield, TrendingUp, Users, DollarSign, Calculator, Slider, ArrowRight, Award, Target, BarChart3, PieChart, Clock, CreditCard, IndianRupee } from 'lucide-react';
+import { Check, Star, Zap, Shield, TrendingUp, Users, DollarSign, Calculator, Sliders as Slider, ArrowRight, Award, Target, BarChart3, PieChart, Clock, CreditCard, IndianRupee } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const Plans: React.FC = () => {
