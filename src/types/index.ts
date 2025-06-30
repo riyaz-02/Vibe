@@ -87,7 +87,7 @@ export interface LoanAgreement {
   loanId: string;
   borrowerId: string;
   lenderId?: string;
-  agreementType: 'loan_request' | 'sanction_letter' | 'lending_proof';
+  agreementType: 'loan_request' | 'sanction_letter' | 'lending_proof' | 'loan_closure';
   agreementData: any;
   pdfUrl?: string;
   status: 'pending' | 'signed' | 'active' | 'completed' | 'cancelled';

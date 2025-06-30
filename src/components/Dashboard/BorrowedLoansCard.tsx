@@ -132,26 +132,26 @@ const BorrowedLoansCard: React.FC<BorrowedLoansCardProps> = ({ className = '' })
     try {
       setGeneratingDocument(loan.id);
       
-      // Get borrower profile
+      // Get borrower profile - use maybeSingle() to handle cases where profile might not exist
       const { data: borrowerProfile } = await supabase
         .from('profiles')
         .select('name, email')
         .eq('id', user?.id)
-        .single();
+        .maybeSingle();
       
-      // Get lender profile
+      // Get lender profile - use maybeSingle() to handle cases where profile might not exist
       const { data: lenderProfile } = await supabase
         .from('profiles')
         .select('name, email')
         .eq('id', loan.loan_fundings[0]?.lender_id)
-        .single();
+        .maybeSingle();
       
       // Calculate platform fee (2%)
       const platformFeeRate = 0.02;
       const platformFee = repaymentAmount * platformFeeRate;
       const netAmountToLender = repaymentAmount - platformFee;
       
-      // Prepare data for closure document
+      // Prepare data for closure document with fallback values
       const closureData = {
         loan_id: loan.id,
         borrower_id: user?.id,
@@ -164,8 +164,8 @@ const BorrowedLoansCard: React.FC<BorrowedLoansCardProps> = ({ className = '' })
         purpose: loan.purpose,
         created_at: loan.created_at,
         repaid_at: new Date().toISOString(),
-        borrower: borrowerProfile,
-        lender: lenderProfile
+        borrower: borrowerProfile || { name: 'Borrower', email: user?.email || '' },
+        lender: lenderProfile || { name: 'Lender', email: '' }
       };
       
       // Create loan closure document
