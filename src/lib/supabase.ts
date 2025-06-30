@@ -9,7 +9,7 @@ const hasValidConfig = supabaseUrl &&
                       supabaseUrl !== 'your_supabase_project_url_here' &&
                       supabaseAnonKey !== 'your_supabase_anon_key_here' &&
                       supabaseUrl.startsWith('https://') &&
-                      supabaseAnonKey.length > 50
+                      supabaseAnonKey.length > 10
 
 if (!hasValidConfig) {
   console.warn('⚠️ Supabase configuration missing or invalid')

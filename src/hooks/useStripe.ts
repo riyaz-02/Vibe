@@ -68,7 +68,7 @@ export function useStripe() {
         throw new Error('No active session');
       }
 
-      const defaultSuccessUrl = `${window.location.origin}/dashboard?success=true`;
+      const defaultSuccessUrl = `${window.location.origin}/success?success=true`;
       const defaultCancelUrl = `${window.location.origin}/plans?canceled=true`;
 
       const response = await supabase.functions.invoke('stripe-checkout', {
@@ -179,7 +179,7 @@ export function useStripe() {
     return createCheckoutSession({
       priceId: product.priceId,
       mode: product.mode,
-      successUrl: `${window.location.origin}/dashboard?success=true&product=${product.id}`,
+      successUrl: `${window.location.origin}/success?success=true&product=${product.id}`,
       cancelUrl: `${window.location.origin}/plans?canceled=true&product=${product.id}`,
     });
   };

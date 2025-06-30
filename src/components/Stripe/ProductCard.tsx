@@ -127,7 +127,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, className = '' }) =>
 
         <button
           onClick={handlePurchase}
-          disabled={loading || !stripeConfigured}
+          disabled={loading}
           className={`w-full py-3 px-6 rounded-xl font-semibold transition-all duration-200 ${getButtonStyle()} disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105`}
         >
           {loading ? (
@@ -135,8 +135,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, className = '' }) =>
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
               <span>Processing...</span>
             </div>
-          ) : !stripeConfigured ? (
-            'Payment Unavailable'
           ) : (
             <>
               {product.mode === 'subscription' ? 'Subscribe Now' : 'Purchase Now'}
@@ -147,12 +145,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, className = '' }) =>
         {product.mode === 'subscription' && (
           <p className="text-xs text-gray-500 text-center mt-3">
             Cancel anytime. No long-term commitments.
-          </p>
-        )}
-
-        {!stripeConfigured && (
-          <p className="text-xs text-gray-500 text-center mt-3">
-            Payment system configuration required
           </p>
         )}
       </div>
