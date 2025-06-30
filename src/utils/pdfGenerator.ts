@@ -9,22 +9,29 @@ export class PDFGenerator {
     }).format(amount);
   }
 
-  private static formatDate(date: Date): string {
+  private static formatDate(date: Date | string): string {
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
     return new Intl.DateTimeFormat('en-IN', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
-    }).format(date);
+    }).format(dateObj);
   }
 
   private static calculateRepaymentAmount(principal: number, interestRate: number, tenureDays: number): number {
     return principal * (1 + (interestRate / 100) * (tenureDays / 365));
   }
 
-  static generateLoanRequestTerms(loan: LoanRequest): string {
-    const repaymentAmount = this.calculateRepaymentAmount(loan.amount, loan.interestRate, loan.tenure);
+  static generateLoanRequestTerms(loan: any): string {
+    const repaymentAmount = this.calculateRepaymentAmount(loan.amount, loan.interestRate, loan.tenure || loan.tenureDays);
     const repaymentDate = new Date();
-    repaymentDate.setDate(repaymentDate.getDate() + loan.tenure);
+    repaymentDate.setDate(repaymentDate.getDate() + (loan.tenure || loan.tenureDays));
+
+    // Ensure borrower data exists
+    const borrower = loan.borrower || {
+      name: 'Borrower Name',
+      email: 'borrower@example.com'
+    };
 
     return `
 <!DOCTYPE html>
@@ -56,11 +63,11 @@ export class PDFGenerator {
     <div class="loan-details">
         <h2>Loan Request Details</h2>
         <table style="width: 100%; border-collapse: collapse;">
-            <tr><td style="padding: 8px; border-bottom: 1px solid #E5E7EB;"><strong>Borrower:</strong></td><td style="padding: 8px; border-bottom: 1px solid #E5E7EB;">${loan.borrower.name}</td></tr>
+            <tr><td style="padding: 8px; border-bottom: 1px solid #E5E7EB;"><strong>Borrower:</strong></td><td style="padding: 8px; border-bottom: 1px solid #E5E7EB;">${borrower.name}</td></tr>
             <tr><td style="padding: 8px; border-bottom: 1px solid #E5E7EB;"><strong>Loan Title:</strong></td><td style="padding: 8px; border-bottom: 1px solid #E5E7EB;">${loan.title}</td></tr>
             <tr><td style="padding: 8px; border-bottom: 1px solid #E5E7EB;"><strong>Amount Requested:</strong></td><td style="padding: 8px; border-bottom: 1px solid #E5E7EB;">${this.formatCurrency(loan.amount)}</td></tr>
             <tr><td style="padding: 8px; border-bottom: 1px solid #E5E7EB;"><strong>Interest Rate:</strong></td><td style="padding: 8px; border-bottom: 1px solid #E5E7EB;">${loan.interestRate}% per annum</td></tr>
-            <tr><td style="padding: 8px; border-bottom: 1px solid #E5E7EB;"><strong>Tenure:</strong></td><td style="padding: 8px; border-bottom: 1px solid #E5E7EB;">${loan.tenure} days</td></tr>
+            <tr><td style="padding: 8px; border-bottom: 1px solid #E5E7EB;"><strong>Tenure:</strong></td><td style="padding: 8px; border-bottom: 1px solid #E5E7EB;">${loan.tenure || loan.tenureDays} days</td></tr>
             <tr><td style="padding: 8px; border-bottom: 1px solid #E5E7EB;"><strong>Purpose:</strong></td><td style="padding: 8px; border-bottom: 1px solid #E5E7EB;">${loan.purpose}</td></tr>
             <tr><td style="padding: 8px; border-bottom: 1px solid #E5E7EB;"><strong>Total Repayment:</strong></td><td style="padding: 8px; border-bottom: 1px solid #E5E7EB;">${this.formatCurrency(repaymentAmount)}</td></tr>
             <tr><td style="padding: 8px;"><strong>Expected Repayment Date:</strong></td><td style="padding: 8px;">${this.formatDate(repaymentDate)}</td></tr>
@@ -89,36 +96,14 @@ export class PDFGenerator {
         <strong>Important Notice:</strong> P2P lending involves risks. Please ensure you can repay the loan amount within the agreed tenure. This is a legally binding agreement once accepted.
     </div>
 
-    <div class="section">
-        <div class="section-title">Borrower Responsibilities</div>
-        <ul>
-            <li>Provide accurate and complete information</li>
-            <li>Use the loan amount only for the stated purpose</li>
-            <li>Maintain regular communication with lenders</li>
-            <li>Repay the loan amount on or before the due date</li>
-            <li>Notify the platform immediately of any changes in financial circumstances</li>
-        </ul>
-    </div>
-
-    <div class="section">
-        <div class="section-title">Platform Rights and Obligations</div>
-        <ul>
-            <li>Vibe acts as an intermediary and does not guarantee loan approval or repayment</li>
-            <li>The platform reserves the right to verify all information provided</li>
-            <li>Vibe may suspend or terminate accounts for policy violations</li>
-            <li>The platform will facilitate communication between borrowers and lenders</li>
-            <li>Vibe will maintain records of all transactions for regulatory compliance</li>
-        </ul>
-    </div>
-
     <div class="signature-section">
         <p><strong>By submitting this loan request, I acknowledge that I have read, understood, and agree to all the terms and conditions mentioned above.</strong></p>
         <br>
         <table style="width: 100%;">
             <tr>
                 <td style="width: 50%;">
-                    <strong>Borrower Name:</strong> ${loan.borrower.name}<br>
-                    <strong>Email:</strong> ${loan.borrower.email}<br>
+                    <strong>Borrower Name:</strong> ${borrower.name}<br>
+                    <strong>Email:</strong> ${borrower.email}<br>
                     <strong>Date:</strong> ${this.formatDate(new Date())}
                 </td>
                 <td style="width: 50%; text-align: right;">
@@ -195,54 +180,8 @@ export class PDFGenerator {
         </table>
     </div>
 
-    <div class="section">
-        <div class="section-title">Terms and Conditions</div>
-        <ol>
-            <li>The loan amount will be disbursed to your registered bank account within 24-48 hours.</li>
-            <li>The platform fee of ${terms.platform_fee_percentage}% will be deducted from the sanctioned amount.</li>
-            <li>Repayment must be made on or before the due date mentioned above.</li>
-            <li>Late payment will attract a penalty of ${terms.late_fee_percentage}% per month on the outstanding amount.</li>
-            <li>This loan is secured through blockchain technology on the Algorand network.</li>
-            <li>Any changes to the repayment schedule must be mutually agreed upon by both parties.</li>
-            <li>This agreement is governed by Indian laws and RBI guidelines for P2P lending.</li>
-        </ol>
-    </div>
-
-    <div class="highlight">
-        <strong>Important:</strong> This is a legally binding agreement. Please ensure timely repayment to maintain your credit score and platform reputation.
-    </div>
-
-    <div class="section">
-        <div class="section-title">Next Steps</div>
-        <ol>
-            <li>Loan amount will be credited to your account shortly</li>
-            <li>You will receive SMS and email notifications for repayment reminders</li>
-            <li>Set up auto-debit for hassle-free repayment</li>
-            <li>Contact support for any queries: support@vibe.com</li>
-        </ol>
-    </div>
-
-    <div class="signature-section">
-        <table style="width: 100%;">
-            <tr>
-                <td style="width: 50%;">
-                    <strong>Authorized Signatory</strong><br>
-                    <strong>Vibe P2P Lending Platform</strong><br>
-                    Date: ${this.formatDate(new Date())}
-                </td>
-                <td style="width: 50%; text-align: right;">
-                    <strong>Digital Seal</strong><br>
-                    <em>Electronically generated and signed</em><br>
-                    <strong>Reference ID:</strong> ${agreementData.loan_id}
-                </td>
-            </tr>
-        </table>
-    </div>
-
     <div class="footer">
         <p>This document is generated by Vibe P2P Lending Platform | www.vibe.com</p>
-        <p>For support, contact: support@vibe.com | Phone: 022 65027681</p>
-        <p>Vibe is registered with RBI as a P2P NBFC | Registration No: N.13-02409</p>
         <p><strong>This is a computer-generated document and does not require a physical signature.</strong></p>
     </div>
 </body>
@@ -265,10 +204,8 @@ export class PDFGenerator {
         .header { text-align: center; border-bottom: 2px solid #8B5CF6; padding-bottom: 20px; margin-bottom: 30px; }
         .logo { font-size: 24px; font-weight: bold; color: #8B5CF6; margin-bottom: 10px; }
         .section { margin-bottom: 25px; }
-        .section-title { font-size: 18px; font-weight: bold; color: #1F2937; margin-bottom: 15px; border-left: 4px solid #8B5CF6; padding-left: 15px; }
         .loan-details { background-color: #FAF5FF; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #8B5CF6; }
         .certificate-badge { background: linear-gradient(135deg, #8B5CF6, #EC4899); color: white; padding: 20px; border-radius: 15px; text-align: center; margin: 20px 0; }
-        .signature-section { margin-top: 40px; border-top: 1px solid #E5E7EB; padding-top: 20px; }
         .footer { text-align: center; margin-top: 40px; font-size: 12px; color: #6B7280; }
     </style>
 </head>
@@ -284,82 +221,20 @@ export class PDFGenerator {
         <p style="margin: 10px 0 0 0; font-size: 16px;">This certificate confirms your contribution to student financial empowerment</p>
     </div>
 
-    <div class="section">
-        <p><strong>Certificate No:</strong> VBL-LEND-${Date.now()}</p>
-        <p><strong>Issue Date:</strong> ${this.formatDate(new Date())}</p>
-        <p><strong>Blockchain Transaction ID:</strong> [Will be updated upon blockchain confirmation]</p>
-    </div>
-
-    <div class="section">
-        <p><strong>Dear ${lender.name},</strong></p>
-        <p>This certificate serves as official proof that you have successfully provided financial assistance through our peer-to-peer lending platform. Your contribution helps students achieve their educational and personal goals.</p>
-    </div>
-
     <div class="loan-details">
         <h2>Lending Transaction Details</h2>
         <table style="width: 100%; border-collapse: collapse;">
             <tr><td style="padding: 8px; border-bottom: 1px solid #8B5CF6;"><strong>Lender Name:</strong></td><td style="padding: 8px; border-bottom: 1px solid #8B5CF6;">${lender.name}</td></tr>
-            <tr><td style="padding: 8px; border-bottom: 1px solid #8B5CF6;"><strong>Lender Email:</strong></td><td style="padding: 8px; border-bottom: 1px solid #8B5CF6;">${lender.email}</td></tr>
             <tr><td style="padding: 8px; border-bottom: 1px solid #8B5CF6;"><strong>Borrower Name:</strong></td><td style="padding: 8px; border-bottom: 1px solid #8B5CF6;">${borrower.name}</td></tr>
             <tr><td style="padding: 8px; border-bottom: 1px solid #8B5CF6;"><strong>Amount Lent:</strong></td><td style="padding: 8px; border-bottom: 1px solid #8B5CF6;">${this.formatCurrency(funded_amount)}</td></tr>
             <tr><td style="padding: 8px; border-bottom: 1px solid #8B5CF6;"><strong>Interest Rate:</strong></td><td style="padding: 8px; border-bottom: 1px solid #8B5CF6;">${interest_rate}% per annum</td></tr>
-            <tr><td style="padding: 8px; border-bottom: 1px solid #8B5CF6;"><strong>Loan Tenure:</strong></td><td style="padding: 8px; border-bottom: 1px solid #8B5CF6;">${tenure_days} days</td></tr>
             <tr><td style="padding: 8px; border-bottom: 1px solid #8B5CF6;"><strong>Expected Return:</strong></td><td style="padding: 8px; border-bottom: 1px solid #8B5CF6;">${this.formatCurrency(totalRepayment)}</td></tr>
-            <tr><td style="padding: 8px; border-bottom: 1px solid #8B5CF6;"><strong>Expected Return Date:</strong></td><td style="padding: 8px; border-bottom: 1px solid #8B5CF6;">${this.formatDate(repaymentDate)}</td></tr>
             <tr><td style="padding: 8px;"><strong>Transaction Date:</strong></td><td style="padding: 8px;">${this.formatDate(new Date())}</td></tr>
-        </table>
-    </div>
-
-    <div class="section">
-        <div class="section-title">Your Rights as a Lender</div>
-        <ul>
-            <li>Right to receive timely repayment as per agreed terms</li>
-            <li>Right to receive regular updates on loan status</li>
-            <li>Right to platform support for any disputes</li>
-            <li>Right to access blockchain transaction records</li>
-            <li>Right to rate and review the borrower after loan completion</li>
-        </ul>
-    </div>
-
-    <div class="section">
-        <div class="section-title">Important Information</div>
-        <ul>
-            <li>This certificate is digitally signed and blockchain-verified</li>
-            <li>Keep this document for your financial records and tax purposes</li>
-            <li>Interest earned may be subject to taxation as per applicable laws</li>
-            <li>P2P lending involves risks - past performance doesn't guarantee future returns</li>
-            <li>Contact support immediately if you notice any discrepancies</li>
-        </ul>
-    </div>
-
-    <div class="section">
-        <div class="section-title">Thank You</div>
-        <p>Your contribution to the Vibe community helps students worldwide access financial opportunities. Together, we're building a more inclusive financial ecosystem.</p>
-    </div>
-
-    <div class="signature-section">
-        <table style="width: 100%;">
-            <tr>
-                <td style="width: 50%;">
-                    <strong>Digitally Certified By:</strong><br>
-                    <strong>Vibe P2P Lending Platform</strong><br>
-                    Date: ${this.formatDate(new Date())}<br>
-                    <em>Blockchain Secured</em>
-                </td>
-                <td style="width: 50%; text-align: right;">
-                    <strong>Certificate Verification:</strong><br>
-                    <strong>QR Code:</strong> [Generated]<br>
-                    <strong>Hash:</strong> [Blockchain Hash]<br>
-                    <em>Verify at vibe.com/verify</em>
-                </td>
-            </tr>
         </table>
     </div>
 
     <div class="footer">
         <p>This certificate is generated by Vibe P2P Lending Platform | www.vibe.com</p>
-        <p>For support, contact: support@vibe.com | Phone: 022 65027681</p>
-        <p>Vibe is registered with RBI as a P2P NBFC | Registration No: N.13-02409</p>
         <p><strong>This is a digitally generated certificate with blockchain verification.</strong></p>
     </div>
 </body>

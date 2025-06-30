@@ -32,18 +32,28 @@ const TermsAcceptanceModal: React.FC<TermsAcceptanceModalProps> = ({
   };
 
   const handleDownloadTerms = () => {
-    if (!loanData || !loanData.borrower) {
-      console.error('Loan data or borrower information is missing');
+    if (!loanData) {
+      console.error('Loan data is missing');
       return;
     }
 
     try {
-      const termsHtml = PDFGenerator.generateLoanRequestTerms(loanData);
+      // Ensure we have proper loan data structure
+      const formattedLoanData = {
+        ...loanData,
+        tenure: loanData.tenure || loanData.tenureDays,
+        borrower: loanData.borrower || {
+          name: 'Borrower Name',
+          email: 'borrower@example.com'
+        }
+      };
+
+      const termsHtml = PDFGenerator.generateLoanRequestTerms(formattedLoanData);
       const blob = new Blob([termsHtml], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `loan-terms-${loanData.title.replace(/\s+/g, '-')}.html`;
+      a.download = `loan-terms-${(loanData.title || 'loan').replace(/\s+/g, '-')}.html`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -58,9 +68,13 @@ const TermsAcceptanceModal: React.FC<TermsAcceptanceModalProps> = ({
     return null;
   }
 
-  const repaymentAmount = loanData.amount * (1 + (loanData.interestRate / 100) * (loanData.tenure / 365));
+  const amount = loanData.amount || 0;
+  const interestRate = loanData.interestRate || 0;
+  const tenure = loanData.tenure || loanData.tenureDays || 0;
+  
+  const repaymentAmount = amount * (1 + (interestRate / 100) * (tenure / 365));
   const repaymentDate = new Date();
-  repaymentDate.setDate(repaymentDate.getDate() + loanData.tenure);
+  repaymentDate.setDate(repaymentDate.getDate() + tenure);
 
   return (
     <AnimatePresence>
@@ -99,15 +113,15 @@ const TermsAcceptanceModal: React.FC<TermsAcceptanceModalProps> = ({
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                   <div>
                     <span className="text-blue-600">Amount:</span>
-                    <div className="font-semibold">₹{loanData.amount?.toLocaleString()}</div>
+                    <div className="font-semibold">₹{amount.toLocaleString()}</div>
                   </div>
                   <div>
                     <span className="text-blue-600">Interest:</span>
-                    <div className="font-semibold">{loanData.interestRate}% p.a.</div>
+                    <div className="font-semibold">{interestRate}% p.a.</div>
                   </div>
                   <div>
                     <span className="text-blue-600">Tenure:</span>
-                    <div className="font-semibold">{loanData.tenure} days</div>
+                    <div className="font-semibold">{tenure} days</div>
                   </div>
                   <div>
                     <span className="text-blue-600">Total Repayment:</span>
@@ -218,7 +232,6 @@ const TermsAcceptanceModal: React.FC<TermsAcceptanceModalProps> = ({
                 <button
                   onClick={handleDownloadTerms}
                   className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 text-sm"
-                  disabled={!loanData || !loanData.borrower}
                 >
                   <Download size={16} />
                   <span>Download Terms & Conditions (HTML)</span>
