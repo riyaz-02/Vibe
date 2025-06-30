@@ -13,16 +13,14 @@ const BoltAttribution: React.FC = () => {
         href="https://bolt.new/"
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex items-center space-x-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg hover:shadow-xl transition-all duration-200 backdrop-blur-sm border border-white/20"
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
       >
         <img 
           src="https://i.postimg.cc/sXmWMsSY/black-circle-360x360.png" 
           alt="Bolt Icon" 
-          className="w-5 h-5 rounded-full object-cover"
+          className="w-12 h-12 rounded-full object-cover shadow-lg hover:shadow-xl transition-shadow duration-200"
         />
-        <span>Powered by Bolt.new</span>
       </motion.a>
     </motion.div>
   );
