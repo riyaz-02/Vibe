@@ -17,12 +17,14 @@ interface BorrowedLoan {
   status: string;
   created_at: string;
   total_funded: number;
+  purpose: string;
   loan_fundings: Array<{
     amount: number;
     funded_at: string;
     lender_id: string;
     profiles: {
       name: string;
+      email?: string;
     };
   }>;
 }
@@ -61,11 +63,11 @@ const BorrowedLoansCard: React.FC<BorrowedLoansCardProps> = ({ className = '' })
             amount,
             funded_at,
             lender_id,
-            profiles!lender_id(name)
+            profiles!lender_id(name, email)
           )
         `)
         .eq('borrower_id', user.id)
-        .in('status', ['funded', 'active'])
+        .in('status', ['funded', 'active', 'completed'])
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -146,9 +148,24 @@ const BorrowedLoansCard: React.FC<BorrowedLoansCardProps> = ({ className = '' })
         .eq('id', loan.loan_fundings[0]?.lender_id)
         .maybeSingle();
       
-      // Calculate platform fee (2%)
-      const platformFeeRate = 0.02;
-      const platformFee = repaymentAmount * platformFeeRate;
+      // Calculate interest amount
+      const principal = loan.total_funded;
+      const interestRate = loan.interest_rate / 100;
+      const timeInYears = loan.tenure_days / 365;
+      const interestAmount = principal * interestRate * timeInYears;
+      
+      // Calculate platform fee based on interest rate
+      let platformFeePercentage = 0;
+      if (loan.interest_rate < 5) {
+        platformFeePercentage = 1.5;
+      } else if (loan.interest_rate < 10) {
+        platformFeePercentage = 3.5;
+      } else {
+        platformFeePercentage = 4.5;
+      }
+      
+      // Calculate platform fee as percentage of interest
+      const platformFee = interestAmount * (platformFeePercentage / 100);
       const netAmountToLender = repaymentAmount - platformFee;
       
       // Prepare data for closure document with fallback values
@@ -159,13 +176,21 @@ const BorrowedLoansCard: React.FC<BorrowedLoansCardProps> = ({ className = '' })
         loan_amount: loan.amount,
         repayment_amount: repaymentAmount,
         interest_rate: loan.interest_rate,
+        interest_amount: interestAmount,
         platform_fee: platformFee,
+        platform_fee_percentage: platformFeePercentage,
         net_amount_to_lender: netAmountToLender,
         purpose: loan.purpose,
         created_at: loan.created_at,
         repaid_at: new Date().toISOString(),
-        borrower: borrowerProfile || { name: 'Borrower', email: user?.email || '' },
-        lender: lenderProfile || { name: 'Lender', email: '' }
+        borrower: borrowerProfile || { 
+          name: user?.user_metadata?.name || user?.email?.split('@')[0] || 'Borrower', 
+          email: user?.email || '' 
+        },
+        lender: lenderProfile || { 
+          name: loan.loan_fundings[0]?.profiles?.name || 'Lender', 
+          email: loan.loan_fundings[0]?.profiles?.email || '' 
+        }
       };
       
       // Create loan closure document
@@ -250,7 +275,7 @@ const BorrowedLoansCard: React.FC<BorrowedLoansCardProps> = ({ className = '' })
           <span>Borrowed Loans</span>
         </h3>
         <div className="text-sm text-gray-500">
-          {loans.length} active loan{loans.length !== 1 ? 's' : ''}
+          {loans.length} loan{loans.length !== 1 ? 's' : ''}
         </div>
       </div>
 
@@ -272,7 +297,9 @@ const BorrowedLoansCard: React.FC<BorrowedLoansCardProps> = ({ className = '' })
               <motion.div
                 key={loan.id}
                 className={`border rounded-lg p-4 ${
-                  isOverdue 
+                  loan.status === 'completed' 
+                    ? 'border-green-200 bg-green-50'
+                    : isOverdue 
                     ? 'border-red-200 bg-red-50' 
                     : isDueSoon 
                     ? 'border-yellow-200 bg-yellow-50'
@@ -291,19 +318,26 @@ const BorrowedLoansCard: React.FC<BorrowedLoansCardProps> = ({ className = '' })
                       </div>
                       <div className="flex items-center space-x-1">
                         <Calendar size={14} />
-                        <span>Due: {formatDate(dueDate)}</span>
+                        <span>{loan.status === 'completed' ? 'Repaid: ' + formatDate(new Date(loan.updated_at)) : 'Due: ' + formatDate(dueDate)}</span>
                       </div>
                     </div>
                   </div>
                   
                   <div className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium ${
-                    isOverdue 
+                    loan.status === 'completed'
+                      ? 'bg-green-100 text-green-800'
+                    : isOverdue 
                       ? 'bg-red-100 text-red-800' 
                       : isDueSoon 
                       ? 'bg-yellow-100 text-yellow-800'
-                      : 'bg-green-100 text-green-800'
+                      : 'bg-blue-100 text-blue-800'
                   }`}>
-                    {isOverdue ? (
+                    {loan.status === 'completed' ? (
+                      <>
+                        <CheckCircle size={12} />
+                        <span>Completed</span>
+                      </>
+                    ) : isOverdue ? (
                       <>
                         <AlertCircle size={12} />
                         <span>Overdue</span>
@@ -316,7 +350,7 @@ const BorrowedLoansCard: React.FC<BorrowedLoansCardProps> = ({ className = '' })
                     ) : (
                       <>
                         <CheckCircle size={12} />
-                        <span>On Track</span>
+                        <span>Active</span>
                       </>
                     )}
                   </div>
@@ -338,11 +372,19 @@ const BorrowedLoansCard: React.FC<BorrowedLoansCardProps> = ({ className = '' })
                   </div>
                   
                   <div className="text-center p-3 bg-white rounded-lg">
-                    <div className="text-sm text-gray-500">Days Until Due</div>
+                    <div className="text-sm text-gray-500">{loan.status === 'completed' ? 'Loan Status' : 'Days Until Due'}</div>
                     <div className={`text-lg font-bold ${
-                      isOverdue ? 'text-red-600' : isDueSoon ? 'text-yellow-600' : 'text-green-600'
+                      loan.status === 'completed'
+                        ? 'text-green-600'
+                        : isOverdue ? 'text-red-600' 
+                        : isDueSoon ? 'text-yellow-600' 
+                        : 'text-green-600'
                     }`}>
-                      {isOverdue ? `${Math.abs(daysUntilDue)} overdue` : `${daysUntilDue} days`}
+                      {loan.status === 'completed' 
+                        ? 'Paid in Full' 
+                        : isOverdue 
+                        ? `${Math.abs(daysUntilDue)} overdue` 
+                        : `${daysUntilDue} days`}
                     </div>
                   </div>
                 </div>
@@ -407,7 +449,7 @@ const BorrowedLoansCard: React.FC<BorrowedLoansCardProps> = ({ className = '' })
                   )}
                 </div>
 
-                {wallet && wallet.balance < repaymentAmount && (
+                {wallet && wallet.balance < repaymentAmount && loan.status !== 'completed' && (
                   <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
                     <p className="text-sm text-red-700">
                       Insufficient wallet balance. You need {formatCurrency(repaymentAmount - wallet.balance)} more to repay this loan.

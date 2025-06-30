@@ -72,10 +72,38 @@ serve(async (req) => {
       throw new Error("Insufficient wallet balance");
     }
 
-    // Calculate platform fee (2%)
-    const platformFeeRate = 0.02;
-    const platformFee = repaymentAmount * platformFeeRate;
+    // Calculate platform fee based on interest rate
+    // If interest rate < 5%, platform fee is 1.5% of interest
+    // If interest rate >= 5% and < 10%, platform fee is 3.5% of interest
+    // If interest rate >= 10%, platform fee is 4.5% of interest
+    const interestRate = loan.interest_rate;
+    let platformFeePercentage = 0;
+    
+    if (interestRate < 5) {
+      platformFeePercentage = 1.5;
+    } else if (interestRate < 10) {
+      platformFeePercentage = 3.5;
+    } else {
+      platformFeePercentage = 4.5;
+    }
+    
+    // Calculate interest portion of repayment
+    const principal = loan.total_funded;
+    const timeInYears = loan.tenure_days / 365;
+    const interestAmount = principal * (interestRate / 100) * timeInYears;
+    
+    // Calculate platform fee as percentage of interest
+    const platformFee = interestAmount * (platformFeePercentage / 100);
     const netAmountToLender = repaymentAmount - platformFee;
+
+    console.log(`Loan repayment calculation:
+      Principal: ${principal}
+      Interest Rate: ${interestRate}%
+      Interest Amount: ${interestAmount}
+      Platform Fee Percentage: ${platformFeePercentage}% of interest
+      Platform Fee: ${platformFee}
+      Net to Lender: ${netAmountToLender}
+    `);
 
     // Process repayment for each lender
     const repaymentPromises = loan.loan_fundings.map(async (funding: any) => {
@@ -169,6 +197,8 @@ serve(async (req) => {
         metadata: {
           loan_id: loanId,
           platform_fee: platformFee,
+          platform_fee_percentage: platformFeePercentage,
+          interest_amount: interestAmount,
           net_to_lenders: netAmountToLender
         }
       })
@@ -190,9 +220,11 @@ serve(async (req) => {
       .from("profiles")
       .select("name, email")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
 
-    if (borrowerProfileError) throw borrowerProfileError;
+    if (borrowerProfileError) {
+      console.error("Error fetching borrower profile:", borrowerProfileError);
+    }
 
     // Record loan repayment
     const { data: repaymentRecord, error: repaymentError } = await supabase
@@ -232,18 +264,20 @@ serve(async (req) => {
       loan_amount: loan.amount,
       repayment_amount: repaymentAmount,
       interest_rate: loan.interest_rate,
+      interest_amount: interestAmount,
       platform_fee: platformFee,
+      platform_fee_percentage: platformFeePercentage,
       net_amount_to_lender: netAmountToLender,
       purpose: loan.purpose,
       created_at: loan.created_at,
       repaid_at: new Date().toISOString(),
       borrower: {
-        name: borrowerProfile.name,
-        email: borrowerProfile.email
+        name: borrowerProfile?.name || user.email?.split('@')[0] || 'Borrower',
+        email: borrowerProfile?.email || user.email || ''
       },
       lender: {
-        name: lenderPayments[0].lender_name,
-        email: lenderPayments[0].lender_email
+        name: lenderPayments[0]?.lender_name || 'Lender',
+        email: lenderPayments[0]?.lender_email || ''
       }
     };
 
@@ -270,6 +304,8 @@ serve(async (req) => {
         success: true,
         repaymentAmount,
         platformFee,
+        platformFeePercentage,
+        interestAmount,
         netAmountToLender,
         newBorrowerBalance: borrowerBalanceAfter,
         lenderPayments,
