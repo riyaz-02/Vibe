@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, LayoutDashboard, User, HelpCircle, Mic, MicOff, Globe, Bell, LogIn, Zap, Menu, CreditCard, Users, Phone, Crown } from 'lucide-react';
 import { useStore } from '../../store/useStore';
@@ -14,7 +14,7 @@ interface NavbarProps {
 const Navbar: React.FC<NavbarProps> = ({ onAuthClick }) => {
   const location = useLocation();
   const { user, signOut } = useAuth();
-  const { subscription, stripeConfigured } = useStripe();
+  const { subscription } = useStripe();
   const { 
     currentLanguage, 
     setCurrentLanguage,
@@ -25,6 +25,7 @@ const Navbar: React.FC<NavbarProps> = ({ onAuthClick }) => {
   } = useStore();
   
   const t = useTranslation(currentLanguage);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Navigation items for authenticated users
   const authenticatedNavItems = [
@@ -62,7 +63,7 @@ const Navbar: React.FC<NavbarProps> = ({ onAuthClick }) => {
 
   // Get subscription status for display
   const getSubscriptionDisplay = () => {
-    if (!stripeConfigured || !subscription) return null;
+    if (!subscription) return null;
     
     if (subscription.subscription_status === 'active') {
       return (
@@ -217,14 +218,12 @@ const Navbar: React.FC<NavbarProps> = ({ onAuthClick }) => {
                     >
                       Dashboard
                     </Link>
-                    {stripeConfigured && (
-                      <Link
-                        to="/plans"
-                        className="block px-4 py-2 text-gray-700 hover:bg-gray-50"
-                      >
-                        Upgrade Plan
-                      </Link>
-                    )}
+                    <Link
+                      to="/plans"
+                      className="block px-4 py-2 text-gray-700 hover:bg-gray-50"
+                    >
+                      Upgrade Plan
+                    </Link>
                     <button
                       onClick={handleSignOut}
                       className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-b-lg"
@@ -245,7 +244,10 @@ const Navbar: React.FC<NavbarProps> = ({ onAuthClick }) => {
             )}
 
             {/* Mobile Menu Button */}
-            <button className="md:hidden p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors">
+            <button 
+              className="md:hidden p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
               <Menu size={20} />
             </button>
           </div>
@@ -253,9 +255,9 @@ const Navbar: React.FC<NavbarProps> = ({ onAuthClick }) => {
       </div>
 
       {/* Mobile Navigation */}
-      <div className="md:hidden border-t border-gray-200">
-        <div className="flex justify-around py-2">
-          {navItems.slice(0, 4).map((item) => {
+      <div className={`md:hidden border-t border-gray-200 ${mobileMenuOpen ? 'block' : 'hidden'}`}>
+        <div className="flex flex-col py-2">
+          {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
             
@@ -263,15 +265,24 @@ const Navbar: React.FC<NavbarProps> = ({ onAuthClick }) => {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`flex flex-col items-center p-2 ${
-                  isActive ? 'text-blue-600' : 'text-gray-600'
+                className={`flex items-center space-x-2 px-4 py-3 ${
+                  isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600'
                 }`}
+                onClick={() => setMobileMenuOpen(false)}
               >
                 <Icon size={20} />
-                <span className="text-xs mt-1">{item.label}</span>
+                <span className="font-medium">{item.label}</span>
               </Link>
             );
           })}
+          <Link
+            to="/plans"
+            className="flex items-center space-x-2 px-4 py-3 text-gray-600"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            <CreditCard size={20} />
+            <span className="font-medium">Plans</span>
+          </Link>
         </div>
       </div>
     </nav>

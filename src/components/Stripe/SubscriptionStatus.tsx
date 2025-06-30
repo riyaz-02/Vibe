@@ -9,20 +9,18 @@ interface SubscriptionStatusProps {
 }
 
 const SubscriptionStatus: React.FC<SubscriptionStatusProps> = ({ className = '' }) => {
-  const { subscription, fetchUserSubscription, loading, stripeConfigured } = useStripe();
+  const { subscription, fetchUserSubscription, loading } = useStripe();
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const loadSubscription = async () => {
-      if (stripeConfigured) {
-        setIsLoading(true);
-        await fetchUserSubscription();
-      }
+      setIsLoading(true);
+      await fetchUserSubscription();
       setIsLoading(false);
     };
 
     loadSubscription();
-  }, [stripeConfigured]);
+  }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -71,11 +69,6 @@ const SubscriptionStatus: React.FC<SubscriptionStatusProps> = ({ className = '' 
       day: 'numeric'
     });
   };
-
-  // Don't show anything if Stripe is not configured
-  if (!stripeConfigured) {
-    return null;
-  }
 
   if (isLoading) {
     return (

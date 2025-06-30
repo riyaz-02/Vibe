@@ -12,7 +12,7 @@ interface ProductCardProps {
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ product, className = '' }) => {
-  const { purchaseProduct, loading, stripeConfigured } = useStripe();
+  const { purchaseProduct, loading } = useStripe();
   const { user } = useAuth();
 
   const handlePurchase = async () => {
@@ -46,7 +46,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, className = '' }) =>
     if (product.popular) {
       return 'border-yellow-400 ring-2 ring-yellow-100 shadow-lg';
     }
-    if (product.name.startsWith('P7')) {
+    if (product.name === 'Premium') {
       return 'border-purple-400 ring-2 ring-purple-100 shadow-lg';
     }
     return 'border-gray-200 hover:border-blue-300 hover:shadow-lg';
@@ -56,7 +56,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, className = '' }) =>
     if (product.popular) {
       return 'bg-gradient-to-r from-yellow-400 to-orange-400 text-white hover:from-yellow-500 hover:to-orange-500';
     }
-    if (product.name.startsWith('P7')) {
+    if (product.name === 'Premium') {
       return 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white hover:from-purple-600 hover:to-indigo-600';
     }
     return 'bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700';
@@ -75,9 +75,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, className = '' }) =>
         </div>
       )}
 
-      {product.name.startsWith('P7') && (
+      {product.name === 'Premium' && (
         <div className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white text-center py-2 rounded-t-2xl">
-          <span className="text-sm font-semibold">Ultimate Plan</span>
+          <span className="text-sm font-semibold">Premium Plan</span>
         </div>
       )}
 
@@ -95,7 +95,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, className = '' }) =>
               {formatProductPrice(product)}
             </span>
             {product.mode === 'subscription' && (
-              <span className="text-gray-500">/month</span>
+              <span className="text-gray-500">/year</span>
             )}
           </div>
           {product.mode === 'payment' && (

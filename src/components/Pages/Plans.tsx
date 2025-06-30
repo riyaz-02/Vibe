@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
 import { Check, Star, Zap, Shield, TrendingUp, Users, DollarSign, Calculator, Sliders as Slider, ArrowRight, Award, Target, BarChart3, PieChart, Clock, CreditCard, IndianRupee, Crown, Package } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { stripeProducts, getPaymentProducts, getSubscriptionProducts } from '../../stripe-config';
+import { stripeProducts } from '../../stripe-config';
 import ProductCard from '../Stripe/ProductCard';
+import { useAuth } from '../../hooks/useAuth';
+import { Link } from 'react-router-dom';
 
 const Plans: React.FC = () => {
   const [lendingAmount, setLendingAmount] = useState(100000);
   const [interestRate, setInterestRate] = useState(18);
   const [tenure, setTenure] = useState(24);
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const { user } = useAuth();
 
   // Calculate returns
   const monthlyRepayment = (lendingAmount * (interestRate / 100) / 12) + (lendingAmount / tenure);
@@ -17,19 +20,13 @@ const Plans: React.FC = () => {
 
   const categories = [
     { id: 'all', name: 'All Plans', icon: Package },
-    { id: 'subscription', name: 'Subscriptions', icon: Zap },
-    { id: 'payment', name: 'One-time', icon: CreditCard },
-    { id: 'premium', name: 'Premium', icon: Crown }
+    { id: 'subscription', name: 'Subscriptions', icon: Zap }
   ];
 
   const getFilteredProducts = () => {
     switch (selectedCategory) {
       case 'subscription':
-        return getSubscriptionProducts();
-      case 'payment':
-        return getPaymentProducts();
-      case 'premium':
-        return stripeProducts.filter(p => p.name.startsWith('P') && ['P5', 'P6', 'P7'].includes(p.name));
+        return stripeProducts.filter(p => p.mode === 'subscription');
       default:
         return stripeProducts;
     }
@@ -117,24 +114,6 @@ const Plans: React.FC = () => {
       role: 'Corporate Leader',
       quote: 'An investment that supports the business aspirations of borrowers while fulfilling my financial goals.',
       tags: ['investment product', 'second source of income']
-    },
-    {
-      name: 'Pradeep J',
-      role: 'Retired Army',
-      quote: 'Great way to create a second, monthly income',
-      tags: ['easy and simple investment']
-    },
-    {
-      name: 'Sapan',
-      role: 'Data Lead',
-      quote: 'I like the transparency in stating returns in APR or per annum basis. No misleading IRRs or fancy return calculations.',
-      tags: ['investment product with high returns']
-    },
-    {
-      name: 'Manish Jasyal',
-      role: 'Product Manager',
-      quote: 'I am a conservative investor and Vibe worked for me because of being RBI regulated and easy to understand.',
-      tags: ['risk free', 'non-volatile']
     }
   ];
 
@@ -154,10 +133,6 @@ const Plans: React.FC = () => {
     {
       question: 'How are my investments in loans secured? What happens if the borrower doesn\'t repay?',
       answer: 'We have comprehensive borrower verification, credit scoring, and recovery processes. However, P2P lending involves risks and returns are not guaranteed.'
-    },
-    {
-      question: 'How will I disburse funds to a borrower and how will they repay me?',
-      answer: 'All transactions are handled through our secure platform with automated disbursement and repayment processes through verified bank accounts.'
     }
   ];
 
@@ -231,15 +206,14 @@ const Plans: React.FC = () => {
             <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-6">
               {selectedCategory === 'all' ? 'All Available Plans' : 
                selectedCategory === 'subscription' ? 'Subscription Plans' :
-               selectedCategory === 'payment' ? 'One-time Purchase Plans' :
-               'Premium Plans'}
+               'One-time Purchase Plans'}
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               Choose the plan that best fits your lending goals and unlock powerful features
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl mx-auto">
             {filteredProducts.map((product, index) => (
               <motion.div
                 key={product.id}
@@ -523,7 +497,7 @@ const Plans: React.FC = () => {
             </h2>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {testimonials.map((testimonial, index) => (
               <motion.div
                 key={index}
@@ -602,9 +576,20 @@ const Plans: React.FC = () => {
             <p className="text-xl mb-8 opacity-90">
               Join thousands of investors who are already earning monthly returns with Vibe.
             </p>
-            <button className="bg-white text-blue-600 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-gray-100 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105">
-              Start Lending Now
-            </button>
+            {user ? (
+              <Link
+                to="/dashboard"
+                className="bg-white text-blue-600 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-gray-100 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+              >
+                View Dashboard
+              </Link>
+            ) : (
+              <button
+                className="bg-white text-blue-600 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-gray-100 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+              >
+                Start Lending Now
+              </button>
+            )}
           </motion.div>
         </div>
       </section>

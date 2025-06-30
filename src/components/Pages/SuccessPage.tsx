@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { CheckCircle, ArrowRight, Download, Crown, Package } from 'lucide-react';
+import { CheckCircle, ArrowRight, Download, Crown, Package, Star } from 'lucide-react';
 import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { getProductById } from '../../stripe-config';
@@ -8,7 +8,7 @@ import { useStripe } from '../../hooks/useStripe';
 
 const SuccessPage: React.FC = () => {
   const [searchParams] = useSearchParams();
-  const { fetchUserSubscription, fetchUserOrders, stripeConfigured } = useStripe();
+  const { fetchUserSubscription, fetchUserOrders } = useStripe();
   const [loading, setLoading] = useState(true);
   
   const success = searchParams.get('success');
@@ -24,15 +24,13 @@ const SuccessPage: React.FC = () => {
         origin: { y: 0.6 }
       });
 
-      // Refresh user data if Stripe is configured
+      // Refresh user data
       const refreshData = async () => {
-        if (stripeConfigured) {
-          setLoading(true);
-          await Promise.all([
-            fetchUserSubscription(),
-            fetchUserOrders()
-          ]);
-        }
+        setLoading(true);
+        await Promise.all([
+          fetchUserSubscription(),
+          fetchUserOrders()
+        ]);
         setLoading(false);
       };
 
@@ -40,7 +38,7 @@ const SuccessPage: React.FC = () => {
     } else {
       setLoading(false);
     }
-  }, [success, stripeConfigured]);
+  }, [success]);
 
   if (success !== 'true') {
     return (
@@ -102,16 +100,16 @@ const SuccessPage: React.FC = () => {
               <p className="text-gray-600 mb-4">{product.description}</p>
               
               <div className="text-2xl font-bold text-green-600 mb-4">
-                ${product.price.toFixed(2)}
+                ₹{product.price.toFixed(2)}
                 {product.mode === 'subscription' && (
-                  <span className="text-sm text-gray-500 font-normal">/month</span>
+                  <span className="text-sm text-gray-500 font-normal">/year</span>
                 )}
               </div>
 
               {product.mode === 'subscription' && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <p className="text-blue-800 text-sm">
-                    Your subscription is now active! You'll be charged monthly until you cancel.
+                    Your subscription is now active! You'll be charged yearly until you cancel.
                   </p>
                 </div>
               )}
@@ -151,9 +149,7 @@ const SuccessPage: React.FC = () => {
 
             <div className="text-sm text-gray-500">
               <p>A confirmation email has been sent to your registered email address.</p>
-              {stripeConfigured && (
-                <p>You can view your purchase history in your dashboard.</p>
-              )}
+              <p>You can view your purchase history in your dashboard.</p>
             </div>
           </motion.div>
 

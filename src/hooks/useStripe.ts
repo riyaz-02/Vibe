@@ -68,7 +68,7 @@ export function useStripe() {
         throw new Error('No active session');
       }
 
-      const defaultSuccessUrl = `${window.location.origin}/dashboard?success=true`;
+      const defaultSuccessUrl = `${window.location.origin}/success?success=true`;
       const defaultCancelUrl = `${window.location.origin}/plans?canceled=true`;
 
       const response = await supabase.functions.invoke('stripe-checkout', {
