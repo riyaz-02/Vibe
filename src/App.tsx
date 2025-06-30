@@ -15,8 +15,12 @@ import Feed from './components/Feed/Feed';
 import Dashboard from './components/Dashboard/Dashboard';
 import Profile from './components/Profile/Profile';
 import Help from './components/Help/Help';
+import Plans from './components/Pages/Plans';
+import About from './components/Pages/About';
+import Contact from './components/Pages/Contact';
 import AuthModal from './components/Auth/AuthModal';
 import ChatBot from './components/Chat/ChatBot';
+import ProtectedRoute from './components/Auth/ProtectedRoute';
 
 function App() {
   const { isVoiceNavigationActive, currentLanguage } = useStore();
@@ -118,25 +122,34 @@ function App() {
         <main className="flex-grow">
           <Routes>
             <Route path="/" element={<HomePage onAuthClick={() => setShowAuthModal(true)} />} />
-            <Route path="/feed" element={
-              <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <Feed />
-              </div>
-            } />
-            <Route path="/dashboard" element={
-              <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <Dashboard />
-              </div>
-            } />
-            <Route path="/profile" element={
-              <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <Profile />
-              </div>
-            } />
+            <Route path="/plans" element={<Plans />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<Contact />} />
             <Route path="/help" element={
               <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <Help />
               </div>
+            } />
+            
+            {/* Protected Routes */}
+            <Route path="/feed" element={
+              <ProtectedRoute>
+                <Feed />
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                  <Dashboard />
+                </div>
+              </ProtectedRoute>
+            } />
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                  <Profile />
+                </div>
+              </ProtectedRoute>
             } />
           </Routes>
         </main>

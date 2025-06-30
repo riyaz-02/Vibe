@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, LayoutDashboard, User, HelpCircle, Mic, MicOff, Globe, Bell, LogIn, Zap, Menu } from 'lucide-react';
+import { Home, LayoutDashboard, User, HelpCircle, Mic, MicOff, Globe, Bell, LogIn, Zap, Menu, CreditCard, Users, Phone } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { useAuth } from '../../hooks/useAuth';
 import { useTranslation } from '../../utils/translations';
@@ -24,13 +24,24 @@ const Navbar: React.FC<NavbarProps> = ({ onAuthClick }) => {
   
   const t = useTranslation(currentLanguage);
 
-  const navItems = [
-    { path: '/', icon: Home, label: t('nav.home') },
+  // Navigation items for authenticated users
+  const authenticatedNavItems = [
     { path: '/feed', icon: LayoutDashboard, label: 'Feed' },
     { path: '/dashboard', icon: LayoutDashboard, label: t('nav.dashboard') },
     { path: '/profile', icon: User, label: t('nav.profile') },
     { path: '/help', icon: HelpCircle, label: t('nav.help') }
   ];
+
+  // Navigation items for non-authenticated users
+  const publicNavItems = [
+    { path: '/', icon: Home, label: t('nav.home') },
+    { path: '/plans', icon: CreditCard, label: 'Plans' },
+    { path: '/about', icon: Users, label: 'About Us' },
+    { path: '/contact', icon: Phone, label: 'Contact Us' },
+    { path: '/help', icon: HelpCircle, label: t('nav.help') }
+  ];
+
+  const navItems = user ? authenticatedNavItems : publicNavItems;
 
   const languages = [
     { code: 'en', label: 'English' },
@@ -123,18 +134,20 @@ const Navbar: React.FC<NavbarProps> = ({ onAuthClick }) => {
               </div>
             </div>
 
-            {/* Voice Navigation Toggle */}
-            <button
-              onClick={toggleVoiceNavigation}
-              className={`p-2 rounded-lg transition-colors ${
-                isVoiceNavigationActive
-                  ? 'bg-blue-100 text-blue-600'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-              aria-label={t('accessibility.voice_nav')}
-            >
-              {isVoiceNavigationActive ? <Mic size={20} /> : <MicOff size={20} />}
-            </button>
+            {/* Voice Navigation Toggle - Only for authenticated users */}
+            {user && (
+              <button
+                onClick={toggleVoiceNavigation}
+                className={`p-2 rounded-lg transition-colors ${
+                  isVoiceNavigationActive
+                    ? 'bg-blue-100 text-blue-600'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+                aria-label={t('accessibility.voice_nav')}
+              >
+                {isVoiceNavigationActive ? <Mic size={20} /> : <MicOff size={20} />}
+              </button>
+            )}
 
             {user ? (
               <>
