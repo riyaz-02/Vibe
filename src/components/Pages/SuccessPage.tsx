@@ -27,11 +27,18 @@ const SuccessPage: React.FC = () => {
       // Refresh user data
       const refreshData = async () => {
         setLoading(true);
-        await Promise.all([
-          fetchUserSubscription(),
-          fetchUserOrders()
-        ]);
-        setLoading(false);
+        try {
+          console.log('Refreshing subscription and order data...');
+          await Promise.all([
+            fetchUserSubscription(),
+            fetchUserOrders()
+          ]);
+          console.log('Data refresh complete');
+        } catch (error) {
+          console.error('Error refreshing data:', error);
+        } finally {
+          setLoading(false);
+        }
       };
 
       refreshData();

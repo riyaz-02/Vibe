@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { useAuth } from './useAuth';
 import { supabase } from '../lib/supabase';
@@ -45,6 +45,14 @@ export function useStripe() {
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [orders, setOrders] = useState<UserOrder[]>([]);
   const { user } = useAuth();
+
+  // Fetch subscription on mount and when user changes
+  useEffect(() => {
+    if (user) {
+      fetchUserSubscription();
+      fetchUserOrders();
+    }
+  }, [user]);
 
   const createCheckoutSession = async (options: StripeCheckoutOptions) => {
     if (!user) {
@@ -111,6 +119,7 @@ export function useStripe() {
     }
 
     try {
+      console.log('Fetching user subscription...');
       const { data, error } = await supabase
         .from('stripe_user_subscriptions')
         .select('*')
@@ -121,6 +130,7 @@ export function useStripe() {
         return null;
       }
 
+      console.log('Subscription data:', data);
       setSubscription(data);
       return data;
     } catch (error) {
@@ -135,6 +145,7 @@ export function useStripe() {
     }
 
     try {
+      console.log('Fetching user orders...');
       const { data, error } = await supabase
         .from('stripe_user_orders')
         .select('*')
@@ -145,6 +156,7 @@ export function useStripe() {
         return [];
       }
 
+      console.log('Orders data:', data);
       setOrders(data || []);
       return data || [];
     } catch (error) {
