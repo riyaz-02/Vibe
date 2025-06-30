@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { X, FileText, Shield, AlertTriangle, Check, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LoanRequest } from '../../types';
 import { PDFGenerator } from '../../utils/pdfGenerator';
 
 interface TermsAcceptanceModalProps {
@@ -31,7 +30,7 @@ const TermsAcceptanceModal: React.FC<TermsAcceptanceModalProps> = ({
     }
   };
 
-  const handleDownloadTerms = () => {
+  const handleDownloadTerms = async () => {
     if (!loanData) {
       console.error('Loan data is missing');
       return;
@@ -49,15 +48,7 @@ const TermsAcceptanceModal: React.FC<TermsAcceptanceModalProps> = ({
       };
 
       const termsHtml = PDFGenerator.generateLoanRequestTerms(formattedLoanData);
-      const blob = new Blob([termsHtml], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `loan-terms-${(loanData.title || 'loan').replace(/\s+/g, '-')}.html`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      await PDFGenerator.generatePDF(termsHtml, `loan-terms-${(loanData.title || 'loan').replace(/\s+/g, '-')}`);
     } catch (error) {
       console.error('Error generating terms document:', error);
     }
@@ -139,7 +130,7 @@ const TermsAcceptanceModal: React.FC<TermsAcceptanceModalProps> = ({
                     <Shield className="text-green-500 mt-1" size={16} />
                     <div>
                       <h4 className="font-medium text-gray-900">Automatic Agreement Generation</h4>
-                      <p className="text-sm text-gray-600">Upon funding, sanction letters and lending agreements will be automatically generated and digitally signed on your behalf.</p>
+                      <p className="text-sm text-gray-600">Upon funding, professional sanction letters and lending agreements will be automatically generated and digitally signed on your behalf.</p>
                     </div>
                   </div>
 
@@ -155,7 +146,7 @@ const TermsAcceptanceModal: React.FC<TermsAcceptanceModalProps> = ({
                     <FileText className="text-blue-500 mt-1" size={16} />
                     <div>
                       <h4 className="font-medium text-gray-900">Platform Fees</h4>
-                      <p className="text-sm text-gray-600">1-2% platform fee will be deducted from the funded amount. This covers verification, processing, and blockchain security.</p>
+                      <p className="text-sm text-gray-600">1.5-2% platform fee will be deducted from the funded amount. This covers verification, processing, and blockchain security.</p>
                     </div>
                   </div>
 
@@ -181,6 +172,7 @@ const TermsAcceptanceModal: React.FC<TermsAcceptanceModalProps> = ({
                       <li>• Defaulting may affect your credit score</li>
                       <li>• All information provided must be accurate</li>
                       <li>• You consent to AI-powered verification processes</li>
+                      <li>• Professional legal documents will be generated automatically</li>
                     </ul>
                   </div>
                 </div>
@@ -210,7 +202,7 @@ const TermsAcceptanceModal: React.FC<TermsAcceptanceModalProps> = ({
                     className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
                   <span className="text-sm text-gray-700">
-                    I consent to automatic generation and digital signing of sanction letters and lending agreements upon loan funding.
+                    I consent to automatic generation and digital signing of professional sanction letters and lending agreements upon loan funding.
                   </span>
                 </label>
 
@@ -234,7 +226,7 @@ const TermsAcceptanceModal: React.FC<TermsAcceptanceModalProps> = ({
                   className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 text-sm"
                 >
                   <Download size={16} />
-                  <span>Download Terms & Conditions (HTML)</span>
+                  <span>Download Professional Terms & Conditions (PDF)</span>
                 </button>
               </div>
             </div>
