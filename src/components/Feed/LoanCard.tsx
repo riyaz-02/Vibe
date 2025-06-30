@@ -3,9 +3,11 @@ import { Heart, MessageCircle, Share2, Clock, IndianRupee, CheckCircle, Stethosc
 import { LoanRequest } from '../../types';
 import { useStore } from '../../store/useStore';
 import { useTranslation } from '../../utils/translations';
-import { motion } from 'framer-motion';
+import { useWallet } from '../../hooks/useWallet';
+import { motion, AnimatePresence } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import confetti from 'canvas-confetti';
+import toast from 'react-hot-toast';
 
 interface LoanCardProps {
   loan: LoanRequest;
@@ -14,9 +16,11 @@ interface LoanCardProps {
 
 const LoanCard: React.FC<LoanCardProps> = ({ loan, onLend }) => {
   const { currentLanguage, currentUser } = useStore();
+  const { wallet } = useWallet();
   const t = useTranslation(currentLanguage);
   const [isLiked, setIsLiked] = useState(false);
   const [showLendModal, setShowLendModal] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [lendAmount, setLendAmount] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
   const [showComments, setShowComments] = useState(false);
@@ -56,11 +60,34 @@ const LoanCard: React.FC<LoanCardProps> = ({ loan, onLend }) => {
     }
   };
 
-  const handleLend = () => {
+  const handleLendSubmit = () => {
+    const amount = parseFloat(lendAmount);
+    if (amount <= 0 || amount > remainingAmount) {
+      toast.error('Please enter a valid amount');
+      return;
+    }
+    
+    // Check if wallet exists and has sufficient balance
+    if (!wallet) {
+      toast.error('Wallet not found. Please try again later.');
+      return;
+    }
+    
+    if (wallet.balance < amount) {
+      toast.error(`Insufficient wallet balance. You need ₹${(amount - wallet.balance).toLocaleString()} more.`);
+      return;
+    }
+    
+    // Show confirmation modal
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmLend = () => {
     const amount = parseFloat(lendAmount);
     if (amount > 0 && amount <= remainingAmount && onLend) {
       onLend(loan.id, amount);
       setShowLendModal(false);
+      setShowConfirmModal(false);
       setLendAmount('');
       
       confetti({
@@ -69,6 +96,14 @@ const LoanCard: React.FC<LoanCardProps> = ({ loan, onLend }) => {
         origin: { y: 0.6 }
       });
     }
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 0
+    }).format(amount);
   };
 
   return (
@@ -340,13 +375,23 @@ const LoanCard: React.FC<LoanCardProps> = ({ loan, onLend }) => {
                   placeholder="Enter amount"
                 />
               </div>
+              
+              {/* Wallet Balance Display */}
+              <div className="mt-2 flex items-center justify-between">
+                <span className="text-sm text-gray-600">Your Wallet Balance:</span>
+                <span className={`font-medium ${wallet && wallet.balance > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {formatCurrency(wallet?.balance || 0)}
+                </span>
+              </div>
             </div>
+            
             <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6">
               <p className="text-yellow-800 text-sm">
                 <strong>💡 Impact:</strong> Your support helps a fellow student achieve their dreams. 
-                Platform fee: 1-2% • P2P lending involves risks.
+                Platform fee: 4.5% of principal • P2P lending involves risks.
               </p>
             </div>
+            
             <div className="flex space-x-3">
               <button
                 onClick={() => setShowLendModal(false)}
@@ -355,7 +400,7 @@ const LoanCard: React.FC<LoanCardProps> = ({ loan, onLend }) => {
                 Cancel
               </button>
               <button
-                onClick={handleLend}
+                onClick={handleLendSubmit}
                 disabled={!lendAmount || parseFloat(lendAmount) <= 0 || parseFloat(lendAmount) > remainingAmount}
                 className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-500 to-teal-500 text-white rounded-xl hover:from-blue-600 hover:to-teal-600 disabled:opacity-50 disabled:cursor-not-allowed font-bold transition-all"
               >
@@ -365,6 +410,81 @@ const LoanCard: React.FC<LoanCardProps> = ({ loan, onLend }) => {
           </motion.div>
         </div>
       )}
+
+      {/* Confirmation Modal */}
+      <AnimatePresence>
+        {showConfirmModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <motion.div
+              className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+            >
+              <h3 className="text-xl font-bold mb-2 text-center">Confirm Your Support</h3>
+              <p className="text-center text-gray-600 mb-4">
+                You're about to support {loan.borrower.name}'s {loan.purpose} loan
+              </p>
+              
+              <div className="bg-blue-50 rounded-xl p-4 mb-6 border border-blue-100">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-sm text-gray-500">Amount to Lend</p>
+                    <p className="text-lg font-bold text-blue-600">{formatCurrency(parseFloat(lendAmount))}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Your Wallet Balance</p>
+                    <p className="text-lg font-bold text-green-600">{formatCurrency(wallet?.balance || 0)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">New Balance After</p>
+                    <p className="text-lg font-bold text-gray-900">
+                      {formatCurrency((wallet?.balance || 0) - parseFloat(lendAmount))}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Platform Fee</p>
+                    <p className="text-lg font-bold text-purple-600">
+                      {formatCurrency(parseFloat(lendAmount) * 0.045)}
+                      <span className="text-xs text-gray-500 ml-1">(4.5%)</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6">
+                <div className="flex items-start space-x-2">
+                  <AlertCircle className="text-yellow-600 flex-shrink-0 mt-0.5" size={16} />
+                  <div className="text-sm text-yellow-800">
+                    <p className="font-medium mb-1">Important Information</p>
+                    <ul className="space-y-1">
+                      <li>• This amount will be deducted from your wallet immediately</li>
+                      <li>• The borrower will receive the funds minus platform fee</li>
+                      <li>• You'll earn {loan.interestRate}% interest on repayment</li>
+                      <li>• P2P lending involves risk of default</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowConfirmModal(false)}
+                  className="flex-1 px-4 py-3 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 font-semibold transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmLend}
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-500 to-teal-500 text-white rounded-xl hover:from-blue-600 hover:to-teal-600 font-bold transition-all"
+                >
+                  Confirm Support
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };

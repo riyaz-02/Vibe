@@ -34,21 +34,26 @@ const Feed: React.FC = () => {
     }
 
     try {
-      const { error } = await fundLoan(loanId, amount);
+      const { success, error } = await fundLoan(loanId, amount);
+      
       if (error) throw error;
       
-      toast.success(`Successfully lent ₹${amount}! Transaction processing...`);
-      
-      // Add notification
-      addNotification({
-        id: Date.now().toString(),
-        userId: user.id,
-        type: 'loan_funded',
-        title: 'Loan Funded',
-        message: `You successfully lent ₹${amount}`,
-        isRead: false,
-        createdAt: new Date()
-      });
+      if (success) {
+        toast.success(`Successfully lent ₹${amount.toLocaleString()}! Transaction processing...`);
+        
+        // Add notification
+        addNotification({
+          id: Date.now().toString(),
+          userId: user.id,
+          type: 'loan_funded',
+          title: 'Loan Funded',
+          message: `You successfully lent ₹${amount.toLocaleString()}`,
+          isRead: false,
+          createdAt: new Date()
+        });
+      } else {
+        toast.error('Transaction failed. Please try again.');
+      }
     } catch (error: any) {
       toast.error(error.message || 'Failed to process lending');
     }

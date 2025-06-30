@@ -3,12 +3,15 @@ import { supabase } from '../lib/supabase'
 import { LoanRequest } from '../types'
 import { useStore } from '../store/useStore'
 import { useAuth } from './useAuth'
+import { useWallet } from './useWallet'
 import { mockLoanRequests } from '../utils/mockData'
+import toast from 'react-hot-toast'
 
 export function useLoans() {
   const [loading, setLoading] = useState(true)
   const { loanRequests, setLoanRequests } = useStore()
   const { user } = useAuth()
+  const { wallet, refetch: refetchWallet } = useWallet()
 
   useEffect(() => {
     // Only fetch loans once when component mounts
@@ -242,29 +245,70 @@ export function useLoans() {
         throw new Error('Database service not available. Please check your connection.')
       }
 
-      console.log('💰 Funding loan:', loanId, 'Amount:', amount)
-
-      const { data, error } = await supabase
-        .from('loan_fundings')
-        .insert({
-          loan_id: loanId,
-          lender_id: user.id,
-          amount
-        })
-        .select()
-        .single()
-
-      if (error) {
-        console.error('❌ Funding error:', error)
-        throw error
+      // Check wallet balance
+      if (!wallet) {
+        throw new Error('Wallet not found')
       }
 
-      console.log('✅ Loan funded successfully:', data)
-      await fetchLoans() // Refresh the list
-      return { data, error: null }
+      if (wallet.balance < amount) {
+        throw new Error('Insufficient wallet balance')
+      }
+
+      console.log('💰 Funding loan:', loanId, 'Amount:', amount)
+
+      // Get the loan details
+      const { data: loan, error: loanError } = await supabase
+        .from('loan_requests')
+        .select('borrower_id, total_funded, amount')
+        .eq('id', loanId)
+        .single()
+
+      if (loanError) {
+        console.error('❌ Error fetching loan:', loanError)
+        throw loanError
+      }
+
+      // Check if loan is already fully funded
+      if (loan.total_funded >= loan.amount) {
+        throw new Error('This loan is already fully funded')
+      }
+
+      // Check if remaining amount is sufficient
+      const remainingAmount = loan.amount - loan.total_funded
+      if (amount > remainingAmount) {
+        throw new Error(`Maximum funding amount is ${remainingAmount}`)
+      }
+
+      // Calculate platform fee (4.5% of principal)
+      const platformFeePercentage = 4.5
+      const platformFee = amount * (platformFeePercentage / 100)
+      const netAmountToBorrower = amount - platformFee
+
+      // Start a transaction
+      const { error: transactionError } = await supabase.rpc('fund_loan', {
+        p_loan_id: loanId,
+        p_lender_id: user.id,
+        p_borrower_id: loan.borrower_id,
+        p_amount: amount,
+        p_platform_fee: platformFee,
+        p_net_amount: netAmountToBorrower
+      })
+
+      if (transactionError) {
+        console.error('❌ Transaction error:', transactionError)
+        throw transactionError
+      }
+
+      console.log('✅ Loan funded successfully')
+      
+      // Refresh wallet and loans
+      await refetchWallet()
+      await fetchLoans()
+      
+      return { success: true, error: null }
     } catch (error: any) {
       console.error('❌ Error funding loan:', error)
-      return { data: null, error }
+      return { success: false, error }
     }
   }
 

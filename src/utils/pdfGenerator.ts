@@ -83,17 +83,7 @@ export class PDFGenerator {
     const repaymentDate = new Date();
     repaymentDate.setDate(repaymentDate.getDate() + (loanData.tenure || loanData.tenureDays || 30));
     
-    // Calculate loan metrics
-    const principal = loanData.amount || 0;
-    const interestRate = loanData.interestRate || 0;
-    const timeInYears = (loanData.tenure || loanData.tenureDays || 30) / 365;
-    const interestAmount = principal * (interestRate / 100) * timeInYears;
-    const totalRepayment = principal + interestAmount;
-    
-    // Calculate platform fee (4.5% of principal)
-    const platformFeePercentage = 4.5;
-    const platformFee = principal * (platformFeePercentage / 100);
-    const netLoanAmount = principal - platformFee;
+    const totalRepayment = (loanData.amount || 0) * (1 + ((loanData.interestRate || 0) / 100) * ((loanData.tenure || loanData.tenureDays || 30) / 365));
 
     return `
       <!DOCTYPE html>
@@ -250,14 +240,6 @@ export class PDFGenerator {
               <span class="detail-value">₹${(loanData.amount || loanData.loan_amount || 0).toLocaleString('en-IN')}</span>
             </div>
             <div class="detail-row">
-              <span class="detail-label">Platform Fee (${platformFeePercentage}% of principal):</span>
-              <span class="detail-value">₹${platformFee.toLocaleString('en-IN')}</span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-label">Net Loan Amount:</span>
-              <span class="detail-value">₹${netLoanAmount.toLocaleString('en-IN')}</span>
-            </div>
-            <div class="detail-row">
               <span class="detail-label">Interest Rate:</span>
               <span class="detail-value">${loanData.interestRate || loanData.interest_rate || 0}% per annum</span>
             </div>
@@ -276,6 +258,14 @@ export class PDFGenerator {
             <div class="detail-row">
               <span class="detail-label">Repayment Due Date:</span>
               <span class="detail-value highlight">${repaymentDate.toLocaleDateString('en-IN')}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Platform Fee:</span>
+              <span class="detail-value">4.5% of principal (₹${((loanData.amount || loanData.loan_amount || 0) * 0.045).toLocaleString('en-IN', {maximumFractionDigits: 0})})</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Net Loan Amount:</span>
+              <span class="detail-value">₹${((loanData.amount || loanData.loan_amount || 0) * 0.955).toLocaleString('en-IN', {maximumFractionDigits: 0})}</span>
             </div>
           </div>
         </div>
@@ -317,7 +307,7 @@ export class PDFGenerator {
               <li><strong>Interest Rate and Charges:</strong>
                 <ol class="sub-list">
                   <li>The interest rate specified is per annum and will be calculated on a daily basis.</li>
-                  <li>Platform fee of 4.5% will be deducted from the principal amount.</li>
+                  <li>Platform fee of 4.5% of the principal amount will be deducted from the funded amount.</li>
                   <li>Late payment charges of 2% per month will apply on overdue amounts.</li>
                   <li>All charges are inclusive of applicable taxes.</li>
                 </ol>
@@ -441,12 +431,6 @@ export class PDFGenerator {
     const currentDate = new Date().toLocaleDateString('en-IN');
     const sanctionDate = new Date(agreementData.created_at || Date.now()).toLocaleDateString('en-IN');
     const repaymentDate = new Date(agreementData.terms?.repayment_date || Date.now()).toLocaleDateString('en-IN');
-    
-    // Calculate platform fee (4.5% of principal)
-    const platformFeePercentage = 4.5;
-    const principal = agreementData.loan_amount || 0;
-    const platformFee = principal * (platformFeePercentage / 100);
-    const netLoanAmount = principal - platformFee;
     
     return `
       <!DOCTYPE html>
@@ -626,12 +610,12 @@ export class PDFGenerator {
               <span class="detail-value highlight">₹${(agreementData.funded_amount || 0).toLocaleString('en-IN')}</span>
             </div>
             <div class="detail-row">
-              <span class="detail-label">Platform Fee (${platformFeePercentage}% of principal):</span>
-              <span class="detail-value">₹${platformFee.toLocaleString('en-IN')}</span>
+              <span class="detail-label">Platform Fee (4.5% of principal):</span>
+              <span class="detail-value">₹${((agreementData.funded_amount || 0) * 0.045).toLocaleString('en-IN')}</span>
             </div>
             <div class="detail-row">
-              <span class="detail-label">Net Loan Amount:</span>
-              <span class="detail-value highlight">₹${netLoanAmount.toLocaleString('en-IN')}</span>
+              <span class="detail-label">Net Disbursement Amount:</span>
+              <span class="detail-value highlight">₹${((agreementData.funded_amount || 0) * 0.955).toLocaleString('en-IN')}</span>
             </div>
             <div class="detail-row">
               <span class="detail-label">Interest Rate:</span>
@@ -672,7 +656,7 @@ export class PDFGenerator {
               
               <li><strong>Late Payment:</strong> A late payment fee of ${agreementData.terms?.late_fee_percentage || 2}% per month will be charged on overdue amounts.</li>
               
-              <li><strong>Platform Fee:</strong> A platform fee of ${platformFeePercentage}% of the principal amount has been deducted from the disbursed amount.</li>
+              <li><strong>Platform Fee:</strong> A platform fee of 4.5% of the principal amount has been deducted from the disbursed amount.</li>
               
               <li><strong>Default:</strong> Non-payment beyond 7 days of due date will be considered default and may be reported to credit bureaus.</li>
               
@@ -733,12 +717,6 @@ export class PDFGenerator {
   static generateLendingProof(agreementData: any): string {
     const currentDate = new Date().toLocaleDateString('en-IN');
     const transactionDate = new Date(agreementData.created_at || Date.now()).toLocaleDateString('en-IN');
-    
-    // Calculate platform fee (4.5% of principal)
-    const platformFeePercentage = 4.5;
-    const principal = agreementData.loan_amount || 0;
-    const platformFee = principal * (platformFeePercentage / 100);
-    const netLoanAmount = principal - platformFee;
     
     return `
       <!DOCTYPE html>
@@ -934,12 +912,12 @@ export class PDFGenerator {
               <span class="detail-value highlight">₹${(agreementData.funded_amount || 0).toLocaleString('en-IN')}</span>
             </div>
             <div class="detail-row">
-              <span class="detail-label">Platform Fee (${platformFeePercentage}% of principal):</span>
-              <span class="detail-value">₹${platformFee.toLocaleString('en-IN')}</span>
+              <span class="detail-label">Platform Fee (4.5% of principal):</span>
+              <span class="detail-value">₹${((agreementData.funded_amount || 0) * 0.045).toLocaleString('en-IN')}</span>
             </div>
             <div class="detail-row">
               <span class="detail-label">Net Amount to Borrower:</span>
-              <span class="detail-value highlight">₹${netLoanAmount.toLocaleString('en-IN')}</span>
+              <span class="detail-value">₹${((agreementData.funded_amount || 0) * 0.955).toLocaleString('en-IN')}</span>
             </div>
             <div class="detail-row">
               <span class="detail-label">Interest Rate:</span>
@@ -1061,7 +1039,7 @@ export class PDFGenerator {
 
   static generateLoanClosureCertificate(agreementData: any): string {
     const currentDate = new Date().toLocaleDateString('en-IN');
-    const closureDate = new Date(agreementData.repaid_at || Date.now()).toLocaleDateString('en-IN');
+    const repaidDate = new Date(agreementData.repaid_at || Date.now()).toLocaleDateString('en-IN');
     const loanDate = new Date(agreementData.created_at || Date.now()).toLocaleDateString('en-IN');
     
     return `
@@ -1156,7 +1134,7 @@ export class PDFGenerator {
           }
           .verification-section {
             background: #f0fdf4;
-            border: 2px solid #22c55e;
+            border: 2px solid #16a34a;
             padding: 20px;
             border-radius: 8px;
             margin: 25px 0;
@@ -1208,6 +1186,13 @@ export class PDFGenerator {
             align-items: center;
             background: #f0fdf4;
           }
+          .payment-breakdown {
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+          }
         </style>
       </head>
       <body>
@@ -1233,13 +1218,12 @@ export class PDFGenerator {
         <div class="certificate-seal">
           <div style="font-size: 16px; font-weight: bold; color: #16a34a;">PAID IN FULL</div>
           <div style="font-size: 12px; color: #16a34a;">LOAN CLOSED</div>
-          <div style="font-size: 10px; color: #16a34a; margin-top: 5px;">${closureDate}</div>
+          <div style="font-size: 10px; color: #16a34a; margin-top: 5px;">${repaidDate}</div>
         </div>
 
         <div class="section">
           <p style="text-align: center; font-size: 16px; margin: 20px 0;">
-            This is to certify that the following loan has been <strong>fully repaid</strong> and is now closed. 
-            All obligations under this loan agreement have been satisfied.
+            This is to certify that the following peer-to-peer loan has been <strong>successfully repaid in full</strong> and is now closed. All obligations under this loan agreement have been satisfied.
           </p>
         </div>
 
@@ -1263,75 +1247,93 @@ export class PDFGenerator {
               <span class="detail-value">₹${(agreementData.loan_amount || 0).toLocaleString('en-IN')}</span>
             </div>
             <div class="detail-row">
-              <span class="detail-label">Platform Fee (${agreementData.platform_fee_percentage || 4.5}% of principal):</span>
-              <span class="detail-value">₹${(agreementData.platform_fee || 0).toLocaleString('en-IN')}</span>
+              <span class="detail-label">Purpose:</span>
+              <span class="detail-value">${(agreementData.purpose || 'General').charAt(0).toUpperCase() + (agreementData.purpose || 'General').slice(1)}</span>
             </div>
             <div class="detail-row">
               <span class="detail-label">Interest Rate:</span>
               <span class="detail-value">${agreementData.interest_rate || 0}% per annum</span>
             </div>
             <div class="detail-row">
-              <span class="detail-label">Loan Purpose:</span>
-              <span class="detail-value">${(agreementData.purpose || 'General').charAt(0).toUpperCase() + (agreementData.purpose || 'General').slice(1)}</span>
-            </div>
-            <div class="detail-row">
               <span class="detail-label">Loan Date:</span>
               <span class="detail-value">${loanDate}</span>
             </div>
             <div class="detail-row">
-              <span class="detail-label">Repayment Amount:</span>
+              <span class="detail-label">Repayment Date:</span>
+              <span class="detail-value highlight">${repaidDate}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Total Repayment Amount:</span>
               <span class="detail-value highlight">₹${(agreementData.repayment_amount || 0).toLocaleString('en-IN')}</span>
             </div>
             <div class="detail-row">
-              <span class="detail-label">Repayment Date:</span>
-              <span class="detail-value highlight">${closureDate}</span>
+              <span class="detail-label">Status:</span>
+              <span class="detail-value highlight">CLOSED - PAID IN FULL</span>
             </div>
+          </div>
+        </div>
+
+        <div class="payment-breakdown">
+          <div class="section-title" style="color: #0284c7;">Payment Breakdown</div>
+          <div class="detail-row">
+            <span class="detail-label">Principal Amount:</span>
+            <span class="detail-value">₹${(agreementData.loan_amount || 0).toLocaleString('en-IN')}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Interest Amount:</span>
+            <span class="detail-value">₹${(agreementData.interest_amount || 0).toLocaleString('en-IN')}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Platform Fee (${agreementData.platform_fee_percentage || 4.5}% of principal):</span>
+            <span class="detail-value">₹${(agreementData.platform_fee || 0).toLocaleString('en-IN')}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Net Amount to Lender:</span>
+            <span class="detail-value">₹${(agreementData.net_amount_to_lender || 0).toLocaleString('en-IN')}</span>
           </div>
         </div>
 
         <div class="verification-section">
-          <div class="section-title" style="color: #16a34a;">Closure Confirmation</div>
+          <div class="section-title" style="color: #16a34a;">Verification & Confirmation</div>
           <div class="legal-text">
-            <p>This is to certify that:</p>
-            <ol>
-              <li>The borrower has repaid the full loan amount including interest.</li>
-              <li>All obligations under the loan agreement have been satisfied.</li>
-              <li>The loan is now officially closed.</li>
-              <li>No further payments are due from the borrower to the lender.</li>
-              <li>This transaction has been recorded on the blockchain for permanent verification.</li>
-            </ol>
-            <p>The borrower's repayment history has been updated positively in our records, which may contribute to an improved credit profile for future borrowing.</p>
+            <p><strong>✓ Payment Verification:</strong> The full repayment has been received and verified by the platform.</p>
+            <p><strong>✓ Lender Confirmation:</strong> The lender has acknowledged receipt of the full repayment amount.</p>
+            <p><strong>✓ Borrower Clearance:</strong> The borrower has been cleared of all obligations related to this loan.</p>
+            <p><strong>✓ Platform Certification:</strong> Vibe Technologies Pvt. Ltd. hereby certifies that this loan is fully closed.</p>
+            <p><strong>✓ Regulatory Compliance:</strong> This closure complies with all RBI guidelines for P2P lending platforms.</p>
           </div>
         </div>
 
         <div class="blockchain-info">
-          <div class="section-title" style="color: #f59e0b;">Blockchain Verification</div>
+          <div class="section-title" style="color: #f59e0b;">Blockchain Record</div>
           <div class="legal-text">
             <p><strong>Blockchain Hash:</strong> 0x${Math.random().toString(16).substr(2, 64)}</p>
             <p><strong>Block Number:</strong> ${Math.floor(Math.random() * 1000000) + 500000}</p>
             <p><strong>Network:</strong> Algorand Mainnet</p>
-            <p>This loan closure is permanently recorded on the Algorand blockchain for transparency and immutability. The blockchain record serves as tamper-proof evidence of this transaction.</p>
+            <p>This loan closure is permanently recorded on the Algorand blockchain for transparency and immutability. The blockchain record serves as tamper-proof evidence of this loan closure.</p>
           </div>
         </div>
 
         <div class="section">
           <div class="section-title">Legal Declarations</div>
           <div class="legal-text">
-            <p>This certificate serves as conclusive evidence that:</p>
             <ol>
-              <li>The loan agreement between the borrower and lender has been fully satisfied.</li>
-              <li>The borrower has no further financial obligations to the lender under this loan agreement.</li>
-              <li>The lender acknowledges receipt of the full repayment amount.</li>
-              <li>All parties agree that the loan is now closed.</li>
-              <li>This closure has been processed in accordance with RBI guidelines for peer-to-peer lending platforms.</li>
+              <li>This certificate confirms that the loan has been fully repaid and all obligations have been satisfied.</li>
+              <li>The borrower is hereby released from all financial obligations related to this loan.</li>
+              <li>The lender acknowledges receipt of the full repayment amount and has no further claims against the borrower.</li>
+              <li>This document serves as proof of loan closure for legal and tax purposes.</li>
+              <li>Any future claims related to this loan will be considered null and void.</li>
+              <li>Both parties have agreed to the closure of this loan agreement.</li>
             </ol>
           </div>
         </div>
 
         <div class="section">
-          <p>We thank you for using Vibe for your financial needs. We appreciate your timely repayment and look forward to serving you again in the future.</p>
-          
-          <p>For any queries or assistance, please contact our customer support at ${this.COMPANY_INFO.email} or ${this.COMPANY_INFO.phone}.</p>
+          <div class="section-title">Credit Score Impact</div>
+          <div class="legal-text">
+            <p>The successful and timely repayment of this loan has been reported to our internal credit scoring system. This positive repayment history may improve the borrower's credit score and eligibility for future loans on the Vibe platform.</p>
+            <p>The borrower may request a credit score certificate by contacting our customer support.</p>
+          </div>
         </div>
 
         <div class="signature-section">
