@@ -149,7 +149,7 @@ const Footer: React.FC = () => {
             
             <div className="mt-6 text-center text-gray-400 text-xs">
               <p className="mt-4 font-medium">
-                Powered by Gemini AI • Secured by Algorand Blockchain • Built with ❤️ for students worldwide
+                Built with ❤️ for students worldwide
               </p>
             </div>
           </div>
