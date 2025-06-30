@@ -143,13 +143,18 @@ const Profile: React.FC = () => {
       const totalLoansTaken = loanRequests?.length || 0;
       const successfulRepayments = loanRequests?.filter(req => req.status === 'completed').length || 0;
 
-      // Check and award badges
-      await checkAndAwardBadges(user.id, {
-        totalLoansGiven,
-        totalLoansTaken,
-        successfulRepayments,
-        isVerified: profile?.is_verified || false
-      });
+      // Check and award badges (with error handling)
+      try {
+        await checkAndAwardBadges(user.id, {
+          totalLoansGiven,
+          totalLoansTaken,
+          successfulRepayments,
+          isVerified: profile?.is_verified || false
+        });
+      } catch (badgeError) {
+        console.error('Error awarding badges:', badgeError);
+        // Continue with profile loading even if badge awarding fails
+      }
 
       if (profile) {
         const formattedProfile = {
@@ -294,18 +299,26 @@ const Profile: React.FC = () => {
         });
       }
 
-      // Award badges that don't exist yet
+      // Award badges that don't exist yet (with individual error handling)
       for (const badge of badgesToAward) {
-        const { error } = await supabase
-          .from('badges')
-          .upsert(badge, { onConflict: 'user_id,name' });
+        try {
+          const { error } = await supabase
+            .from('badges')
+            .insert(badge)
+            .select()
+            .single();
 
-        if (error) {
-          console.error('Error awarding badge:', error);
+          if (error && error.code !== '23505') { // Ignore duplicate key errors
+            console.error('Error inserting badge:', badge.name, error);
+          }
+        } catch (individualBadgeError) {
+          console.error('Error awarding individual badge:', badge.name, individualBadgeError);
+          // Continue with other badges even if one fails
         }
       }
     } catch (error) {
-      console.error('Error checking badges:', error);
+      console.error('Error in checkAndAwardBadges:', error);
+      // Don't throw error to prevent breaking the profile loading
     }
   };
 

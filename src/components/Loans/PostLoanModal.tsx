@@ -25,6 +25,7 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
+  const [loanDataForTerms, setLoanDataForTerms] = useState<any>(null);
   const [verificationStatus, setVerificationStatus] = useState({
     identity: false,
     medical: false,
@@ -114,7 +115,7 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
   };
 
   const handleTermsAccept = async () => {
-    if (!user) {
+    if (!user || !loanDataForTerms) {
       toast.error('Please sign in to post a loan request');
       return;
     }
@@ -126,18 +127,14 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
       
       // Create loan request
       const loanData = {
-        title: formData.title,
-        description: formData.description,
-        amount: parseFloat(formData.amount),
-        interestRate: parseFloat(formData.interestRate),
-        tenureDays: parseInt(formData.tenureDays),
-        purpose: formData.purpose,
+        title: loanDataForTerms.title,
+        description: loanDataForTerms.description,
+        amount: parseFloat(loanDataForTerms.amount),
+        interestRate: parseFloat(loanDataForTerms.interestRate),
+        tenureDays: parseInt(loanDataForTerms.tenureDays),
+        purpose: loanDataForTerms.purpose,
         images: [], // In a real app, you'd upload to Supabase Storage
-        borrower: currentUser || {
-          id: user.id,
-          name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
-          email: user.email || ''
-        }
+        borrower: loanDataForTerms.borrower
       };
 
       const { data: loan, error: loanError } = await createLoan(loanData);
@@ -199,7 +196,20 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
       return;
     }
 
-    // Show terms acceptance modal
+    // Prepare complete loan data with borrower information
+    const completeLoandData = {
+      ...formData,
+      amount: parseFloat(formData.amount),
+      interestRate: parseFloat(formData.interestRate),
+      tenure: parseInt(formData.tenureDays),
+      borrower: {
+        id: user.id,
+        name: currentUser?.name || user.user_metadata?.name || user.email?.split('@')[0] || 'User',
+        email: user.email || ''
+      }
+    };
+
+    setLoanDataForTerms(completeLoandData);
     setShowTermsModal(true);
   };
 
@@ -224,6 +234,7 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
       medical: false,
       documents: false
     });
+    setLoanDataForTerms(null);
   };
 
   const nextStep = () => {
@@ -748,7 +759,7 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
         isOpen={showTermsModal}
         onClose={() => setShowTermsModal(false)}
         onAccept={handleTermsAccept}
-        loanData={formData}
+        loanData={loanDataForTerms}
         loading={loading}
       />
     </>

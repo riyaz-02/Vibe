@@ -32,21 +32,35 @@ const TermsAcceptanceModal: React.FC<TermsAcceptanceModalProps> = ({
   };
 
   const handleDownloadTerms = () => {
-    const termsHtml = PDFGenerator.generateLoanRequestTerms(loanData);
-    const blob = new Blob([termsHtml], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `loan-terms-${loanData.title.replace(/\s+/g, '-')}.html`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    if (!loanData || !loanData.borrower) {
+      console.error('Loan data or borrower information is missing');
+      return;
+    }
+
+    try {
+      const termsHtml = PDFGenerator.generateLoanRequestTerms(loanData);
+      const blob = new Blob([termsHtml], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `loan-terms-${loanData.title.replace(/\s+/g, '-')}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error generating terms document:', error);
+    }
   };
 
-  const repaymentAmount = loanData.amount * (1 + (loanData.interestRate / 100) * (loanData.tenureDays / 365));
+  // Return early if loanData is not available
+  if (!loanData) {
+    return null;
+  }
+
+  const repaymentAmount = loanData.amount * (1 + (loanData.interestRate / 100) * (loanData.tenure / 365));
   const repaymentDate = new Date();
-  repaymentDate.setDate(repaymentDate.getDate() + loanData.tenureDays);
+  repaymentDate.setDate(repaymentDate.getDate() + loanData.tenure);
 
   return (
     <AnimatePresence>
@@ -93,7 +107,7 @@ const TermsAcceptanceModal: React.FC<TermsAcceptanceModalProps> = ({
                   </div>
                   <div>
                     <span className="text-blue-600">Tenure:</span>
-                    <div className="font-semibold">{loanData.tenureDays} days</div>
+                    <div className="font-semibold">{loanData.tenure} days</div>
                   </div>
                   <div>
                     <span className="text-blue-600">Total Repayment:</span>
@@ -204,6 +218,7 @@ const TermsAcceptanceModal: React.FC<TermsAcceptanceModalProps> = ({
                 <button
                   onClick={handleDownloadTerms}
                   className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 text-sm"
+                  disabled={!loanData || !loanData.borrower}
                 >
                   <Download size={16} />
                   <span>Download Terms & Conditions (HTML)</span>
