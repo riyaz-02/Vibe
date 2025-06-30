@@ -65,7 +65,8 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ className = '' }) => {
     });
   };
 
-  const formatStatus = (status: string) => {
+  const formatStatus = (status: string | null) => {
+    if (!status) return 'Unknown';
     return status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
@@ -154,7 +155,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ className = '' }) => {
                 <Package size={14} className="text-gray-400" />
                 <span className="text-gray-600">Payment:</span>
                 <span className="font-medium text-gray-900 capitalize">
-                  {order.payment_status.replace('_', ' ')}
+                  {formatStatus(order.payment_status)}
                 </span>
               </div>
             </div>

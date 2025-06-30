@@ -57,7 +57,8 @@ const SubscriptionStatus: React.FC<SubscriptionStatusProps> = ({ className = '' 
     }
   };
 
-  const formatStatus = (status: string) => {
+  const formatStatus = (status: string | null) => {
+    if (!status) return 'Unknown';
     return status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
