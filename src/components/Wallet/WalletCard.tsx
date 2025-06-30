@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Wallet, Plus, Minus, CreditCard, TrendingUp, TrendingDown, Clock } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Wallet, Plus, Minus, CreditCard, TrendingUp, TrendingDown, Clock, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useWallet } from '../../hooks/useWallet';
 import AddFundsModal from './AddFundsModal';
@@ -10,17 +10,35 @@ interface WalletCardProps {
 }
 
 const WalletCard: React.FC<WalletCardProps> = ({ className = '' }) => {
-  const { wallet, transactions, loading, addFunds } = useWallet();
+  const { wallet, transactions, loading, addFunds, refetch } = useWallet();
   const [showAddFunds, setShowAddFunds] = useState(false);
   const [showTransactions, setShowTransactions] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    // Fetch wallet data on mount
+    refetch();
+  }, []);
 
   const handleAddFunds = async (amount: number) => {
     try {
       await addFunds(amount);
-      toast.success(`₹${amount} added to your Vibe Wallet!`);
+      toast.success(`₹${amount.toLocaleString()} added to your Vibe Wallet!`);
       setShowAddFunds(false);
     } catch (error: any) {
       toast.error(error.message || 'Failed to add funds');
+    }
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refetch();
+      toast.success('Wallet refreshed');
+    } catch (error) {
+      console.error('Error refreshing wallet:', error);
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -73,11 +91,21 @@ const WalletCard: React.FC<WalletCardProps> = ({ className = '' }) => {
               <p className="text-blue-100 text-sm">Available Balance</p>
             </div>
           </div>
-          <div className="text-right">
-            <div className="text-2xl font-bold">
-              {formatCurrency(wallet?.balance || 0)}
+          <div className="flex items-center space-x-3">
+            <button 
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="p-2 bg-white bg-opacity-10 rounded-full hover:bg-opacity-20 transition-all"
+              title="Refresh wallet"
+            >
+              <RefreshCw size={16} className={refreshing ? "animate-spin" : ""} />
+            </button>
+            <div className="text-right">
+              <div className="text-2xl font-bold">
+                {formatCurrency(wallet?.balance || 0)}
+              </div>
+              <div className="text-blue-100 text-sm">{wallet?.currency || 'INR'}</div>
             </div>
-            <div className="text-blue-100 text-sm">{wallet?.currency || 'INR'}</div>
           </div>
         </div>
 

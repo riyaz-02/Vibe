@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './useAuth';
 import { loadStripe } from '@stripe/stripe-js';
+import toast from 'react-hot-toast';
 
 // Check if Stripe key is available and valid
 const stripeKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
@@ -33,6 +34,12 @@ export function useWallet() {
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      fetchWallet();
+    }
+  }, [user]);
 
   const fetchWallet = async () => {
     if (!user || !supabase) return;
@@ -99,6 +106,7 @@ export function useWallet() {
 
     } catch (error) {
       console.error('Error fetching wallet:', error);
+      toast.error('Failed to load wallet data');
     } finally {
       setLoading(false);
     }
@@ -120,7 +128,8 @@ export function useWallet() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('No active session');
 
-      // Create payment intent
+      // Create payment intent via Supabase Edge Function
+      console.log('Creating payment intent for wallet funding...');
       const response = await supabase.functions.invoke('add-wallet-funds', {
         body: { amount, currency: 'inr' },
         headers: {
@@ -128,19 +137,42 @@ export function useWallet() {
         },
       });
 
-      if (response.error) throw response.error;
+      if (response.error) {
+        console.error('Error creating payment intent:', response.error);
+        throw new Error(response.error.message || 'Failed to create payment intent');
+      }
 
       const { clientSecret } = response.data;
+      if (!clientSecret) {
+        throw new Error('No client secret returned from server');
+      }
+
+      // Load Stripe
       const stripe = await stripePromise;
       if (!stripe) throw new Error('Failed to load Stripe');
 
-      // Confirm payment
-      const { error: paymentError, paymentIntent } = await stripe.confirmCardPayment(clientSecret);
+      // Show Stripe payment sheet
+      const { error: paymentError, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: {
+          card: {
+            token: 'tok_visa', // Use test token for development
+          },
+          billing_details: {
+            name: user.user_metadata?.name || user.email || 'User',
+            email: user.email,
+          },
+        },
+      });
       
-      if (paymentError) throw paymentError;
+      if (paymentError) {
+        console.error('Payment error:', paymentError);
+        throw new Error(paymentError.message || 'Payment failed');
+      }
 
       if (paymentIntent?.status === 'succeeded') {
-        // Process wallet credit
+        console.log('Payment succeeded, processing wallet credit...');
+        
+        // Process wallet credit via Edge Function
         const processResponse = await supabase.functions.invoke('process-wallet-payment', {
           body: { 
             paymentIntentId: paymentIntent.id, 
@@ -151,14 +183,17 @@ export function useWallet() {
           },
         });
 
-        if (processResponse.error) throw processResponse.error;
+        if (processResponse.error) {
+          console.error('Error processing wallet payment:', processResponse.error);
+          throw new Error(processResponse.error.message || 'Failed to process payment');
+        }
 
         // Refresh wallet data
         await fetchWallet();
         return processResponse.data;
+      } else {
+        throw new Error('Payment not completed');
       }
-
-      throw new Error('Payment not completed');
     } catch (error: any) {
       console.error('Add funds error:', error);
       throw error;
@@ -185,7 +220,7 @@ export function useWallet() {
         },
       });
 
-      if (response.error) throw response.error;
+      if (response.error) throw new Error(response.error.message || 'Failed to repay loan');
 
       // Refresh wallet data
       await fetchWallet();
@@ -197,12 +232,6 @@ export function useWallet() {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    if (user) {
-      fetchWallet();
-    }
-  }, [user]);
 
   return {
     wallet,
