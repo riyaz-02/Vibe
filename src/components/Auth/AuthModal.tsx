@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { X, Mail, Lock, User, Eye, EyeOff, Zap } from 'lucide-react'
+import { X, Mail, Lock, User, Eye, EyeOff } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../../hooks/useAuth'
 import toast from 'react-hot-toast'
@@ -72,9 +72,11 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 's
 
             <div className="text-center mb-6">
               <div className="flex items-center justify-center space-x-2 mb-4">
-                <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-teal-500 rounded-xl flex items-center justify-center">
-                  <Zap className="text-white" size={20} />
-                </div>
+                <img 
+                  src="https://i.postimg.cc/3NkJPPCj/4310527d-e957-40f6-b9e8-eefdb06219f3-1.png" 
+                  alt="Vibe Logo" 
+                  className="h-12 w-auto"
+                />
                 <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-teal-600 bg-clip-text text-transparent">
                   Vibe
                 </span>

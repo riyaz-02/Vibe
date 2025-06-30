@@ -68,6 +68,13 @@ const About: React.FC = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
           >
+            <div className="flex justify-center mb-6">
+              <img 
+                src="https://i.postimg.cc/3NkJPPCj/4310527d-e957-40f6-b9e8-eefdb06219f3-1.png" 
+                alt="Vibe Logo" 
+                className="h-16 w-auto"
+              />
+            </div>
             <h1 className="text-4xl lg:text-6xl font-bold mb-6">
               About <span className="bg-gradient-to-r from-blue-400 to-teal-400 bg-clip-text text-transparent">Vibe</span>
             </h1>
@@ -234,6 +241,13 @@ const About: React.FC = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
+            <div className="flex justify-center mb-6">
+              <img 
+                src="https://i.postimg.cc/3NkJPPCj/4310527d-e957-40f6-b9e8-eefdb06219f3-1.png" 
+                alt="Vibe Logo" 
+                className="h-16 w-auto"
+              />
+            </div>
             <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-6">
               Ready to Join the Vibe?
             </h2>

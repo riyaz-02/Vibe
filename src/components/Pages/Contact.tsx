@@ -71,6 +71,13 @@ const Contact: React.FC = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
           >
+            <div className="flex justify-center mb-6">
+              <img 
+                src="https://i.postimg.cc/3NkJPPCj/4310527d-e957-40f6-b9e8-eefdb06219f3-1.png" 
+                alt="Vibe Logo" 
+                className="h-16 w-auto"
+              />
+            </div>
             <h1 className="text-4xl lg:text-6xl font-bold mb-6">
               Get in <span className="bg-gradient-to-r from-blue-400 to-teal-400 bg-clip-text text-transparent">Touch</span>
             </h1>

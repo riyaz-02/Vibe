@@ -71,6 +71,14 @@ const SuccessPage: React.FC = () => {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
         >
+          <div className="flex justify-center mb-6">
+            <img 
+              src="https://i.postimg.cc/3NkJPPCj/4310527d-e957-40f6-b9e8-eefdb06219f3-1.png" 
+              alt="Vibe Logo" 
+              className="h-16 w-auto"
+            />
+          </div>
+          
           <motion.div
             className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-8"
             initial={{ scale: 0 }}

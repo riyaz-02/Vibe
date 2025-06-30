@@ -26,9 +26,11 @@ const Footer: React.FC = () => {
             {/* Brand Section */}
             <div className="col-span-1 md:col-span-1">
               <div className="flex items-center space-x-3 mb-4">
-                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-teal-500 rounded-xl flex items-center justify-center">
-                  <Zap className="text-white" size={24} />
-                </div>
+                <img 
+                  src="https://i.postimg.cc/3NkJPPCj/4310527d-e957-40f6-b9e8-eefdb06219f3-1.png" 
+                  alt="Vibe Logo" 
+                  className="h-12 w-auto"
+                />
                 <div>
                   <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-teal-400 bg-clip-text text-transparent">
                     {t('app.title')}
@@ -100,7 +102,7 @@ const Footer: React.FC = () => {
             <div className="flex flex-col md:flex-row justify-between items-center">
               <div className="flex items-center space-x-6 mb-4 md:mb-0">
                 <span className="text-gray-400 text-sm">
-                  © 2025 Vibe. Platform fee: 1-2%. Lending involves risks.
+                  © 2025 Vibe. Platform fee: 4.5% of principal. Lending involves risks.
                 </span>
               </div>
               

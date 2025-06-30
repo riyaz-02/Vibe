@@ -84,6 +84,11 @@ export class PDFGenerator {
     repaymentDate.setDate(repaymentDate.getDate() + (loanData.tenure || loanData.tenureDays || 30));
     
     const totalRepayment = (loanData.amount || 0) * (1 + ((loanData.interestRate || 0) / 100) * ((loanData.tenure || loanData.tenureDays || 30) / 365));
+    
+    // Calculate platform fee (4.5% of principal)
+    const platformFeePercentage = 4.5;
+    const platformFee = (loanData.amount || 0) * (platformFeePercentage / 100);
+    const netDisbursement = (loanData.amount || 0) - platformFee;
 
     return `
       <!DOCTYPE html>
@@ -210,10 +215,15 @@ export class PDFGenerator {
             padding: 2px 4px;
             border-radius: 3px;
           }
+          .logo {
+            max-width: 100px;
+            margin: 0 auto 10px;
+          }
         </style>
       </head>
       <body>
         <div class="header">
+          <img src="https://i.postimg.cc/3NkJPPCj/4310527d-e957-40f6-b9e8-eefdb06219f3-1.png" alt="Vibe Logo" class="logo">
           <div class="company-logo">VIBE</div>
           <div class="company-info">
             ${this.COMPANY_INFO.name}<br>
@@ -240,6 +250,14 @@ export class PDFGenerator {
               <span class="detail-value">₹${(loanData.amount || loanData.loan_amount || 0).toLocaleString('en-IN')}</span>
             </div>
             <div class="detail-row">
+              <span class="detail-label">Platform Fee (${platformFeePercentage}% of principal):</span>
+              <span class="detail-value">₹${platformFee.toLocaleString('en-IN', {maximumFractionDigits: 0})}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Net Disbursement Amount:</span>
+              <span class="detail-value highlight">₹${netDisbursement.toLocaleString('en-IN', {maximumFractionDigits: 0})}</span>
+            </div>
+            <div class="detail-row">
               <span class="detail-label">Interest Rate:</span>
               <span class="detail-value">${loanData.interestRate || loanData.interest_rate || 0}% per annum</span>
             </div>
@@ -258,14 +276,6 @@ export class PDFGenerator {
             <div class="detail-row">
               <span class="detail-label">Repayment Due Date:</span>
               <span class="detail-value highlight">${repaymentDate.toLocaleDateString('en-IN')}</span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-label">Platform Fee:</span>
-              <span class="detail-value">4.5% of principal (₹${((loanData.amount || loanData.loan_amount || 0) * 0.045).toLocaleString('en-IN', {maximumFractionDigits: 0})})</span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-label">Net Loan Amount:</span>
-              <span class="detail-value">₹${((loanData.amount || loanData.loan_amount || 0) * 0.955).toLocaleString('en-IN', {maximumFractionDigits: 0})}</span>
             </div>
           </div>
         </div>
@@ -307,7 +317,7 @@ export class PDFGenerator {
               <li><strong>Interest Rate and Charges:</strong>
                 <ol class="sub-list">
                   <li>The interest rate specified is per annum and will be calculated on a daily basis.</li>
-                  <li>Platform fee of 4.5% of the principal amount will be deducted from the funded amount.</li>
+                  <li>Platform fee of ${platformFeePercentage}% of the principal amount will be deducted from the funded amount.</li>
                   <li>Late payment charges of 2% per month will apply on overdue amounts.</li>
                   <li>All charges are inclusive of applicable taxes.</li>
                 </ol>
@@ -431,6 +441,11 @@ export class PDFGenerator {
     const currentDate = new Date().toLocaleDateString('en-IN');
     const sanctionDate = new Date(agreementData.created_at || Date.now()).toLocaleDateString('en-IN');
     const repaymentDate = new Date(agreementData.terms?.repayment_date || Date.now()).toLocaleDateString('en-IN');
+    
+    // Calculate platform fee (4.5% of principal)
+    const platformFeePercentage = 4.5;
+    const platformFee = (agreementData.loan_amount || 0) * (platformFeePercentage / 100);
+    const netDisbursement = (agreementData.funded_amount || 0) - platformFee;
     
     return `
       <!DOCTYPE html>
@@ -560,10 +575,15 @@ export class PDFGenerator {
             margin: 20px 0;
             text-align: center;
           }
+          .logo {
+            max-width: 100px;
+            margin: 0 auto 10px;
+          }
         </style>
       </head>
       <body>
         <div class="header">
+          <img src="https://i.postimg.cc/3NkJPPCj/4310527d-e957-40f6-b9e8-eefdb06219f3-1.png" alt="Vibe Logo" class="logo">
           <div class="company-logo">VIBE</div>
           <div class="company-info">
             ${this.COMPANY_INFO.name}<br>
@@ -607,15 +627,15 @@ export class PDFGenerator {
             </div>
             <div class="detail-row">
               <span class="detail-label">Loan Amount Sanctioned:</span>
-              <span class="detail-value highlight">₹${(agreementData.funded_amount || 0).toLocaleString('en-IN')}</span>
+              <span class="detail-value">₹${(agreementData.funded_amount || 0).toLocaleString('en-IN')}</span>
             </div>
             <div class="detail-row">
-              <span class="detail-label">Platform Fee (4.5% of principal):</span>
-              <span class="detail-value">₹${((agreementData.funded_amount || 0) * 0.045).toLocaleString('en-IN')}</span>
+              <span class="detail-label">Platform Fee (${platformFeePercentage}% of principal):</span>
+              <span class="detail-value">₹${platformFee.toLocaleString('en-IN', {maximumFractionDigits: 0})}</span>
             </div>
             <div class="detail-row">
               <span class="detail-label">Net Disbursement Amount:</span>
-              <span class="detail-value highlight">₹${((agreementData.funded_amount || 0) * 0.955).toLocaleString('en-IN')}</span>
+              <span class="detail-value highlight">₹${netDisbursement.toLocaleString('en-IN', {maximumFractionDigits: 0})}</span>
             </div>
             <div class="detail-row">
               <span class="detail-label">Interest Rate:</span>
@@ -656,7 +676,7 @@ export class PDFGenerator {
               
               <li><strong>Late Payment:</strong> A late payment fee of ${agreementData.terms?.late_fee_percentage || 2}% per month will be charged on overdue amounts.</li>
               
-              <li><strong>Platform Fee:</strong> A platform fee of 4.5% of the principal amount has been deducted from the disbursed amount.</li>
+              <li><strong>Platform Fee:</strong> A platform fee of ${platformFeePercentage}% of the principal amount has been deducted from the disbursed amount.</li>
               
               <li><strong>Default:</strong> Non-payment beyond 7 days of due date will be considered default and may be reported to credit bureaus.</li>
               
@@ -717,6 +737,10 @@ export class PDFGenerator {
   static generateLendingProof(agreementData: any): string {
     const currentDate = new Date().toLocaleDateString('en-IN');
     const transactionDate = new Date(agreementData.created_at || Date.now()).toLocaleDateString('en-IN');
+    
+    // Calculate platform fee (4.5% of principal)
+    const platformFeePercentage = 4.5;
+    const platformFee = (agreementData.loan_amount || 0) * (platformFeePercentage / 100);
     
     return `
       <!DOCTYPE html>
@@ -862,10 +886,15 @@ export class PDFGenerator {
             align-items: center;
             background: #faf5ff;
           }
+          .logo {
+            max-width: 100px;
+            margin: 0 auto 10px;
+          }
         </style>
       </head>
       <body>
         <div class="header">
+          <img src="https://i.postimg.cc/3NkJPPCj/4310527d-e957-40f6-b9e8-eefdb06219f3-1.png" alt="Vibe Logo" class="logo">
           <div class="company-logo">VIBE</div>
           <div class="company-info">
             ${this.COMPANY_INFO.name}<br>
@@ -912,12 +941,12 @@ export class PDFGenerator {
               <span class="detail-value highlight">₹${(agreementData.funded_amount || 0).toLocaleString('en-IN')}</span>
             </div>
             <div class="detail-row">
-              <span class="detail-label">Platform Fee (4.5% of principal):</span>
-              <span class="detail-value">₹${((agreementData.funded_amount || 0) * 0.045).toLocaleString('en-IN')}</span>
+              <span class="detail-label">Platform Fee (${platformFeePercentage}% of principal):</span>
+              <span class="detail-value">₹${platformFee.toLocaleString('en-IN', {maximumFractionDigits: 0})}</span>
             </div>
             <div class="detail-row">
               <span class="detail-label">Net Amount to Borrower:</span>
-              <span class="detail-value">₹${((agreementData.funded_amount || 0) * 0.955).toLocaleString('en-IN')}</span>
+              <span class="detail-value">₹${((agreementData.funded_amount || 0) - platformFee).toLocaleString('en-IN', {maximumFractionDigits: 0})}</span>
             </div>
             <div class="detail-row">
               <span class="detail-label">Interest Rate:</span>
@@ -1040,7 +1069,7 @@ export class PDFGenerator {
   static generateLoanClosureCertificate(agreementData: any): string {
     const currentDate = new Date().toLocaleDateString('en-IN');
     const repaidDate = new Date(agreementData.repaid_at || Date.now()).toLocaleDateString('en-IN');
-    const loanDate = new Date(agreementData.created_at || Date.now()).toLocaleDateString('en-IN');
+    const createdDate = new Date(agreementData.created_at || Date.now()).toLocaleDateString('en-IN');
     
     return `
       <!DOCTYPE html>
@@ -1060,14 +1089,14 @@ export class PDFGenerator {
           }
           .header {
             text-align: center;
-            border-bottom: 3px solid #16a34a;
+            border-bottom: 3px solid #10b981;
             padding-bottom: 20px;
             margin-bottom: 30px;
           }
           .company-logo {
             font-size: 28px;
             font-weight: bold;
-            color: #16a34a;
+            color: #10b981;
             margin-bottom: 10px;
           }
           .company-info {
@@ -1082,16 +1111,16 @@ export class PDFGenerator {
             margin: 30px 0;
             text-transform: uppercase;
             color: #1f2937;
-            background: #f0fdf4;
+            background: #ecfdf5;
             padding: 15px;
             border-radius: 8px;
-            border: 2px solid #16a34a;
+            border: 2px solid #10b981;
           }
           .certificate-number {
             text-align: center;
             margin-bottom: 20px;
             font-weight: bold;
-            color: #16a34a;
+            color: #10b981;
             font-size: 14px;
           }
           .section {
@@ -1105,7 +1134,7 @@ export class PDFGenerator {
             border-bottom: 1px solid #e5e7eb;
             padding-bottom: 5px;
           }
-          .loan-details {
+          .transaction-details {
             background: #f8fafc;
             padding: 20px;
             border-radius: 8px;
@@ -1127,14 +1156,14 @@ export class PDFGenerator {
             color: #1f2937;
           }
           .highlight {
-            background: #dcfce7;
+            background: #d1fae5;
             padding: 2px 4px;
             border-radius: 3px;
             font-weight: bold;
           }
           .verification-section {
             background: #f0fdf4;
-            border: 2px solid #16a34a;
+            border: 2px solid #22c55e;
             padding: 20px;
             border-radius: 8px;
             margin: 25px 0;
@@ -1175,7 +1204,7 @@ export class PDFGenerator {
             text-align: center;
             margin: 30px 0;
             padding: 20px;
-            border: 3px solid #16a34a;
+            border: 3px solid #10b981;
             border-radius: 50%;
             width: 150px;
             height: 150px;
@@ -1184,19 +1213,17 @@ export class PDFGenerator {
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            background: #f0fdf4;
+            background: #ecfdf5;
           }
-          .payment-breakdown {
-            background: #f0f9ff;
-            border: 1px solid #bae6fd;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 20px 0;
+          .logo {
+            max-width: 100px;
+            margin: 0 auto 10px;
           }
         </style>
       </head>
       <body>
         <div class="header">
+          <img src="https://i.postimg.cc/3NkJPPCj/4310527d-e957-40f6-b9e8-eefdb06219f3-1.png" alt="Vibe Logo" class="logo">
           <div class="company-logo">VIBE</div>
           <div class="company-info">
             ${this.COMPANY_INFO.name}<br>
@@ -1216,96 +1243,90 @@ export class PDFGenerator {
         </div>
 
         <div class="certificate-seal">
-          <div style="font-size: 16px; font-weight: bold; color: #16a34a;">PAID IN FULL</div>
-          <div style="font-size: 12px; color: #16a34a;">LOAN CLOSED</div>
-          <div style="font-size: 10px; color: #16a34a; margin-top: 5px;">${repaidDate}</div>
+          <div style="font-size: 16px; font-weight: bold; color: #10b981;">PAID IN FULL</div>
+          <div style="font-size: 12px; color: #10b981;">LOAN CLOSED</div>
+          <div style="font-size: 10px; color: #10b981; margin-top: 5px;">${repaidDate}</div>
         </div>
 
         <div class="section">
           <p style="text-align: center; font-size: 16px; margin: 20px 0;">
-            This is to certify that the following peer-to-peer loan has been <strong>successfully repaid in full</strong> and is now closed. All obligations under this loan agreement have been satisfied.
+            This is to certify that the following loan has been <strong>fully repaid</strong> and is now closed. All obligations under this loan agreement have been satisfied.
           </p>
         </div>
 
         <div class="section">
           <div class="section-title">Loan Details</div>
-          <div class="loan-details">
+          <div class="transaction-details">
             <div class="detail-row">
               <span class="detail-label">Loan ID:</span>
               <span class="detail-value">${agreementData.loan_id || 'N/A'}</span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-label">Borrower Name:</span>
-              <span class="detail-value">${agreementData.borrower?.name || 'N/A'}</span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-label">Lender Name:</span>
-              <span class="detail-value">${agreementData.lender?.name || 'N/A'}</span>
             </div>
             <div class="detail-row">
               <span class="detail-label">Original Loan Amount:</span>
               <span class="detail-value">₹${(agreementData.loan_amount || 0).toLocaleString('en-IN')}</span>
             </div>
             <div class="detail-row">
-              <span class="detail-label">Purpose:</span>
-              <span class="detail-value">${(agreementData.purpose || 'General').charAt(0).toUpperCase() + (agreementData.purpose || 'General').slice(1)}</span>
-            </div>
-            <div class="detail-row">
               <span class="detail-label">Interest Rate:</span>
               <span class="detail-value">${agreementData.interest_rate || 0}% per annum</span>
             </div>
             <div class="detail-row">
-              <span class="detail-label">Loan Date:</span>
-              <span class="detail-value">${loanDate}</span>
+              <span class="detail-label">Interest Amount:</span>
+              <span class="detail-value">₹${(agreementData.interest_amount || 0).toLocaleString('en-IN', {maximumFractionDigits: 0})}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Platform Fee (${agreementData.platform_fee_percentage || 4.5}% of principal):</span>
+              <span class="detail-value">₹${(agreementData.platform_fee || 0).toLocaleString('en-IN', {maximumFractionDigits: 0})}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Total Repayment Amount:</span>
+              <span class="detail-value highlight">₹${(agreementData.repayment_amount || 0).toLocaleString('en-IN', {maximumFractionDigits: 0})}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Loan Purpose:</span>
+              <span class="detail-value">${(agreementData.purpose || 'General').charAt(0).toUpperCase() + (agreementData.purpose || 'General').slice(1)}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Loan Creation Date:</span>
+              <span class="detail-value">${createdDate}</span>
             </div>
             <div class="detail-row">
               <span class="detail-label">Repayment Date:</span>
               <span class="detail-value highlight">${repaidDate}</span>
             </div>
-            <div class="detail-row">
-              <span class="detail-label">Total Repayment Amount:</span>
-              <span class="detail-value highlight">₹${(agreementData.repayment_amount || 0).toLocaleString('en-IN')}</span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-label">Status:</span>
-              <span class="detail-value highlight">CLOSED - PAID IN FULL</span>
-            </div>
           </div>
         </div>
 
-        <div class="payment-breakdown">
-          <div class="section-title" style="color: #0284c7;">Payment Breakdown</div>
-          <div class="detail-row">
-            <span class="detail-label">Principal Amount:</span>
-            <span class="detail-value">₹${(agreementData.loan_amount || 0).toLocaleString('en-IN')}</span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">Interest Amount:</span>
-            <span class="detail-value">₹${(agreementData.interest_amount || 0).toLocaleString('en-IN')}</span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">Platform Fee (${agreementData.platform_fee_percentage || 4.5}% of principal):</span>
-            <span class="detail-value">₹${(agreementData.platform_fee || 0).toLocaleString('en-IN')}</span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">Net Amount to Lender:</span>
-            <span class="detail-value">₹${(agreementData.net_amount_to_lender || 0).toLocaleString('en-IN')}</span>
+        <div class="section">
+          <div class="section-title">Parties Involved</div>
+          <div style="display: flex; justify-content: space-between; gap: 20px;">
+            <div style="flex: 1; background: #f0f9ff; padding: 15px; border-radius: 8px; border: 1px solid #0ea5e9;">
+              <h4 style="color: #0ea5e9; margin-bottom: 10px;">Lender Details</h4>
+              <div><strong>Name:</strong> ${agreementData.lender?.name || 'N/A'}</div>
+              <div><strong>Email:</strong> ${agreementData.lender?.email || 'N/A'}</div>
+              ${agreementData.lender?.phone ? `<div><strong>Phone:</strong> ${agreementData.lender.phone}</div>` : ''}
+            </div>
+            <div style="flex: 1; background: #f0fdf4; padding: 15px; border-radius: 8px; border: 1px solid #22c55e;">
+              <h4 style="color: #22c55e; margin-bottom: 10px;">Borrower Details</h4>
+              <div><strong>Name:</strong> ${agreementData.borrower?.name || 'N/A'}</div>
+              <div><strong>Email:</strong> ${agreementData.borrower?.email || 'N/A'}</div>
+              ${agreementData.borrower?.phone ? `<div><strong>Phone:</strong> ${agreementData.borrower.phone}</div>` : ''}
+            </div>
           </div>
         </div>
 
         <div class="verification-section">
-          <div class="section-title" style="color: #16a34a;">Verification & Confirmation</div>
+          <div class="section-title" style="color: #22c55e;">Closure Verification</div>
           <div class="legal-text">
-            <p><strong>✓ Payment Verification:</strong> The full repayment has been received and verified by the platform.</p>
-            <p><strong>✓ Lender Confirmation:</strong> The lender has acknowledged receipt of the full repayment amount.</p>
-            <p><strong>✓ Borrower Clearance:</strong> The borrower has been cleared of all obligations related to this loan.</p>
-            <p><strong>✓ Platform Certification:</strong> Vibe Technologies Pvt. Ltd. hereby certifies that this loan is fully closed.</p>
-            <p><strong>✓ Regulatory Compliance:</strong> This closure complies with all RBI guidelines for P2P lending platforms.</p>
+            <p><strong>✓ Full Repayment:</strong> The borrower has repaid the loan in full, including principal and interest.</p>
+            <p><strong>✓ No Outstanding Dues:</strong> There are no outstanding dues or obligations related to this loan.</p>
+            <p><strong>✓ Regulatory Compliance:</strong> This closure complies with RBI P2P lending regulations.</p>
+            <p><strong>✓ Platform Authorization:</strong> Closure authorized under RBI license ${this.COMPANY_INFO.rbiLicense}.</p>
+            <p><strong>✓ Digital Signatures:</strong> All parties have provided valid digital consent as per IT Act, 2000.</p>
           </div>
         </div>
 
         <div class="blockchain-info">
-          <div class="section-title" style="color: #f59e0b;">Blockchain Record</div>
+          <div class="section-title" style="color: #f59e0b;">Blockchain Security</div>
           <div class="legal-text">
             <p><strong>Blockchain Hash:</strong> 0x${Math.random().toString(16).substr(2, 64)}</p>
             <p><strong>Block Number:</strong> ${Math.floor(Math.random() * 1000000) + 500000}</p>
@@ -1318,33 +1339,38 @@ export class PDFGenerator {
           <div class="section-title">Legal Declarations</div>
           <div class="legal-text">
             <ol>
-              <li>This certificate confirms that the loan has been fully repaid and all obligations have been satisfied.</li>
-              <li>The borrower is hereby released from all financial obligations related to this loan.</li>
-              <li>The lender acknowledges receipt of the full repayment amount and has no further claims against the borrower.</li>
+              <li>This certificate confirms that the loan has been fully repaid and closed.</li>
+              <li>The borrower has fulfilled all obligations under the loan agreement.</li>
+              <li>The lender acknowledges receipt of the full repayment amount.</li>
               <li>This document serves as proof of loan closure for legal and tax purposes.</li>
-              <li>Any future claims related to this loan will be considered null and void.</li>
-              <li>Both parties have agreed to the closure of this loan agreement.</li>
+              <li>The platform has facilitated this transaction but is not a party to the loan agreement.</li>
+              <li>Any disputes arising from this transaction will be resolved as per the loan agreement terms.</li>
             </ol>
           </div>
         </div>
 
         <div class="section">
-          <div class="section-title">Credit Score Impact</div>
+          <div class="section-title">Important Notes</div>
           <div class="legal-text">
-            <p>The successful and timely repayment of this loan has been reported to our internal credit scoring system. This positive repayment history may improve the borrower's credit score and eligibility for future loans on the Vibe platform.</p>
-            <p>The borrower may request a credit score certificate by contacting our customer support.</p>
+            <ul>
+              <li>This certificate is valid for all legal and regulatory purposes.</li>
+              <li>Both parties should maintain this document for tax filing and record-keeping.</li>
+              <li>This loan closure may positively impact the borrower's credit profile.</li>
+              <li>For any queries regarding this transaction, contact our support team.</li>
+              <li>This document is digitally generated and legally valid without physical signatures.</li>
+            </ul>
           </div>
         </div>
 
         <div class="signature-section">
           <div class="signature-box">
-            <strong>Borrower</strong><br>
-            ${agreementData.borrower?.name || 'Borrower Name'}<br>
+            <strong>Lender</strong><br>
+            ${agreementData.lender?.name || 'Lender Name'}<br>
             Date: ${currentDate}
           </div>
           <div class="signature-box">
-            <strong>Lender</strong><br>
-            ${agreementData.lender?.name || 'Lender Name'}<br>
+            <strong>Borrower</strong><br>
+            ${agreementData.borrower?.name || 'Borrower Name'}<br>
             Date: ${currentDate}
           </div>
           <div class="signature-box">

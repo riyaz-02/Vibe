@@ -123,13 +123,11 @@ const HomePage: React.FC<HomePageProps> = ({ onAuthClick }) => {
               className="flex items-center justify-center space-x-3 mb-8"
               variants={fadeInUp}
             >
-              <motion.div 
-                className="w-16 h-16 bg-gradient-to-r from-blue-400 to-teal-400 rounded-2xl flex items-center justify-center shadow-2xl"
-                whileHover={{ scale: 1.1, rotate: 5 }}
-                transition={{ type: "spring", stiffness: 300 }}
-              >
-                <Zap className="text-white" size={32} />
-              </motion.div>
+              <img 
+                src="https://i.postimg.cc/3NkJPPCj/4310527d-e957-40f6-b9e8-eefdb06219f3-1.png" 
+                alt="Vibe Logo" 
+                className="h-16 w-auto"
+              />
               <div>
                 <h1 className="text-5xl lg:text-7xl font-bold bg-gradient-to-r from-white via-blue-100 to-cyan-100 bg-clip-text text-transparent">
                   Vibe
@@ -781,6 +779,13 @@ const HomePage: React.FC<HomePageProps> = ({ onAuthClick }) => {
             viewport={{ once: true }}
             variants={fadeInUp}
           >
+            <div className="flex justify-center mb-6">
+              <img 
+                src="https://i.postimg.cc/3NkJPPCj/4310527d-e957-40f6-b9e8-eefdb06219f3-1.png" 
+                alt="Vibe Logo" 
+                className="h-16 w-auto"
+              />
+            </div>
             <h2 className="text-4xl lg:text-5xl font-bold mb-6">
               Ready to Start Your Vibe Journey?
             </h2>

@@ -83,9 +83,11 @@ const Navbar: React.FC<NavbarProps> = ({ onAuthClick }) => {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-teal-500 rounded-xl flex items-center justify-center shadow-lg">
-              <Zap className="text-white" size={20} />
-            </div>
+            <img 
+              src="https://i.postimg.cc/3NkJPPCj/4310527d-e957-40f6-b9e8-eefdb06219f3-1.png" 
+              alt="Vibe Logo" 
+              className="h-10 w-auto"
+            />
             <div className="flex flex-col">
               <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-teal-600 bg-clip-text text-transparent">
                 {t('app.title')}
