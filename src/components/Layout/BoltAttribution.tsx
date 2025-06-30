@@ -17,7 +17,7 @@ const BoltAttribution: React.FC = () => {
         whileTap={{ scale: 0.95 }}
       >
         <img 
-          src="https://i.postimg.cc/sXmWMsSY/black-circle-360x360.png" 
+          src="https://i.postimg.cc/RFPwhv5k/logotext-poweredby-360w.png" 
           alt="Bolt Icon" 
           className="w-16 h-16 rounded-full object-cover shadow-lg hover:shadow-xl transition-shadow duration-200"
         />
