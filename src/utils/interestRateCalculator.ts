@@ -97,7 +97,7 @@ const calculateInterestRateWithAI = async (params: LoanParameters): Promise<Inte
     const principal = params.amount;
     const timeInYears = params.tenureDays / 365;
     const interestAmount = principal * (interestRate / 100) * timeInYears;
-    const platformFee = principal * (platformFeePercentage / 100);
+    const platformFee = principal * (platformFeePercentage / 10000);
     const repaymentAmount = principal + interestAmount;
     
     // Generate explanation
