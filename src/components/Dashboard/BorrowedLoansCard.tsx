@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, DollarSign, Calendar, AlertCircle, CheckCircle, CreditCard } from 'lucide-react';
+import { Clock, DollarSign, Calendar, AlertCircle, CheckCircle, CreditCard, Download, FileText } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../hooks/useAuth';
 import { useWallet } from '../../hooks/useWallet';
+import { useAgreements } from '../../hooks/useAgreements';
 import { supabase } from '../../lib/supabase';
+import { PDFGenerator } from '../../utils/pdfGenerator';
 import toast from 'react-hot-toast';
 
 interface BorrowedLoan {
@@ -32,9 +34,11 @@ interface BorrowedLoansCardProps {
 const BorrowedLoansCard: React.FC<BorrowedLoansCardProps> = ({ className = '' }) => {
   const { user } = useAuth();
   const { wallet, repayLoan, loading: walletLoading } = useWallet();
+  const { agreements, createLoanClosureDocument } = useAgreements();
   const [loans, setLoans] = useState<BorrowedLoan[]>([]);
   const [loading, setLoading] = useState(true);
   const [repayingLoan, setRepayingLoan] = useState<string | null>(null);
+  const [generatingDocument, setGeneratingDocument] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -112,11 +116,94 @@ const BorrowedLoansCard: React.FC<BorrowedLoansCardProps> = ({ className = '' })
       setRepayingLoan(loan.id);
       await repayLoan(loan.id, repaymentAmount);
       toast.success('Loan repaid successfully!');
+      
+      // Generate loan closure document
+      await generateLoanClosureDocument(loan, repaymentAmount);
+      
       await fetchBorrowedLoans(); // Refresh the list
     } catch (error: any) {
       toast.error(error.message || 'Failed to repay loan');
     } finally {
       setRepayingLoan(null);
+    }
+  };
+
+  const generateLoanClosureDocument = async (loan: BorrowedLoan, repaymentAmount: number) => {
+    try {
+      setGeneratingDocument(loan.id);
+      
+      // Get borrower profile
+      const { data: borrowerProfile } = await supabase
+        .from('profiles')
+        .select('name, email')
+        .eq('id', user?.id)
+        .single();
+      
+      // Get lender profile
+      const { data: lenderProfile } = await supabase
+        .from('profiles')
+        .select('name, email')
+        .eq('id', loan.loan_fundings[0]?.lender_id)
+        .single();
+      
+      // Calculate platform fee (2%)
+      const platformFeeRate = 0.02;
+      const platformFee = repaymentAmount * platformFeeRate;
+      const netAmountToLender = repaymentAmount - platformFee;
+      
+      // Prepare data for closure document
+      const closureData = {
+        loan_id: loan.id,
+        borrower_id: user?.id,
+        lender_id: loan.loan_fundings[0]?.lender_id,
+        loan_amount: loan.amount,
+        repayment_amount: repaymentAmount,
+        interest_rate: loan.interest_rate,
+        platform_fee: platformFee,
+        net_amount_to_lender: netAmountToLender,
+        purpose: loan.purpose,
+        created_at: loan.created_at,
+        repaid_at: new Date().toISOString(),
+        borrower: borrowerProfile,
+        lender: lenderProfile
+      };
+      
+      // Create loan closure document
+      const { error } = await createLoanClosureDocument(closureData);
+      
+      if (error) {
+        console.error('Error creating loan closure document:', error);
+        toast.error('Loan repaid but failed to generate closure document');
+      } else {
+        toast.success('Loan closure document generated successfully!');
+      }
+    } catch (error) {
+      console.error('Error generating loan closure document:', error);
+    } finally {
+      setGeneratingDocument(null);
+    }
+  };
+
+  const downloadLoanClosureDocument = async (loanId: string) => {
+    try {
+      // Find the loan closure agreement
+      const closureAgreement = agreements.find(
+        agreement => agreement.loanId === loanId && agreement.agreementType === 'loan_closure'
+      );
+      
+      if (!closureAgreement) {
+        toast.error('Loan closure document not found');
+        return;
+      }
+      
+      // Generate and download the PDF
+      const closureHtml = PDFGenerator.generateLoanClosureCertificate(closureAgreement.agreementData);
+      await PDFGenerator.generatePDF(closureHtml, `loan-closure-${loanId}`);
+      
+      toast.success('Loan closure document downloaded');
+    } catch (error) {
+      console.error('Error downloading loan closure document:', error);
+      toast.error('Failed to download loan closure document');
     }
   };
 
@@ -175,6 +262,11 @@ const BorrowedLoansCard: React.FC<BorrowedLoansCardProps> = ({ className = '' })
             const daysUntilDue = getDaysUntilDue(dueDate);
             const isOverdue = daysUntilDue < 0;
             const isDueSoon = daysUntilDue <= 7 && daysUntilDue >= 0;
+            
+            // Check if loan has a closure document
+            const hasClosureDocument = agreements.some(
+              agreement => agreement.loanId === loan.id && agreement.agreementType === 'loan_closure'
+            );
 
             return (
               <motion.div
@@ -267,32 +359,52 @@ const BorrowedLoansCard: React.FC<BorrowedLoansCardProps> = ({ className = '' })
                     </span>
                   </div>
                   
-                  <button
-                    onClick={() => handleRepayment(loan)}
-                    disabled={
-                      repayingLoan === loan.id || 
-                      walletLoading || 
-                      !wallet || 
-                      wallet.balance < repaymentAmount
-                    }
-                    className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center space-x-2 ${
-                      wallet && wallet.balance >= repaymentAmount
-                        ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600'
-                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    }`}
-                  >
-                    {repayingLoan === loan.id ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        <span>Processing...</span>
-                      </>
-                    ) : (
-                      <>
-                        <CreditCard size={16} />
-                        <span>Repay Now</span>
-                      </>
-                    )}
-                  </button>
+                  {loan.status === 'completed' ? (
+                    <button
+                      onClick={() => downloadLoanClosureDocument(loan.id)}
+                      disabled={generatingDocument === loan.id || !hasClosureDocument}
+                      className="px-4 py-2 rounded-lg font-medium transition-all flex items-center space-x-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600"
+                    >
+                      {generatingDocument === loan.id ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          <span>Processing...</span>
+                        </>
+                      ) : (
+                        <>
+                          <FileText size={16} />
+                          <span>Loan Closure Document</span>
+                        </>
+                      )}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleRepayment(loan)}
+                      disabled={
+                        repayingLoan === loan.id || 
+                        walletLoading || 
+                        !wallet || 
+                        wallet.balance < repaymentAmount
+                      }
+                      className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center space-x-2 ${
+                        wallet && wallet.balance >= repaymentAmount
+                          ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600'
+                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      }`}
+                    >
+                      {repayingLoan === loan.id ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          <span>Processing...</span>
+                        </>
+                      ) : (
+                        <>
+                          <CreditCard size={16} />
+                          <span>Repay Now</span>
+                        </>
+                      )}
+                    </button>
+                  )}
                 </div>
 
                 {wallet && wallet.balance < repaymentAmount && (
