@@ -6,6 +6,7 @@ import { useLoans } from '../../hooks/useLoans';
 import { useTranslation } from '../../utils/translations';
 import LoanCard from './LoanCard';
 import PostLoanModal from '../Loans/PostLoanModal';
+import LoanCalculator from '../Loans/LoanCalculator';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 
@@ -17,6 +18,7 @@ const Feed: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [showPostModal, setShowPostModal] = useState(false);
+  const [showCalculator, setShowCalculator] = useState(false);
 
   const filteredLoans = loans.filter(loan => {
     const matchesSearch = loan.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -147,15 +149,27 @@ const Feed: React.FC = () => {
                 </div>
                 
                 {user && (
-                  <motion.button
-                    onClick={() => setShowPostModal(true)}
-                    className="mt-4 lg:mt-0 bg-white/20 backdrop-blur-lg text-white px-6 py-3 rounded-xl font-semibold flex items-center space-x-2 hover:bg-white/30 transition-all duration-200 border border-white/30"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <Plus size={20} />
-                    <span>Share Your Story</span>
-                  </motion.button>
+                  <div className="flex flex-col sm:flex-row gap-3 mt-4 lg:mt-0">
+                    <motion.button
+                      onClick={() => setShowCalculator(!showCalculator)}
+                      className="bg-white/20 backdrop-blur-lg text-white px-6 py-3 rounded-xl font-semibold flex items-center space-x-2 hover:bg-white/30 transition-all duration-200 border border-white/30"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <Calculator size={20} />
+                      <span>Loan Calculator</span>
+                    </motion.button>
+                    
+                    <motion.button
+                      onClick={() => setShowPostModal(true)}
+                      className="bg-white/20 backdrop-blur-lg text-white px-6 py-3 rounded-xl font-semibold flex items-center space-x-2 hover:bg-white/30 transition-all duration-200 border border-white/30"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <Plus size={20} />
+                      <span>Share Your Story</span>
+                    </motion.button>
+                  </div>
                 )}
               </div>
 
@@ -192,6 +206,20 @@ const Feed: React.FC = () => {
                 </div>
               </div>
             </motion.div>
+
+            {/* Loan Calculator (Collapsible) */}
+            <AnimatePresence>
+              {showCalculator && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="mb-6 overflow-hidden"
+                >
+                  <LoanCalculator />
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Feed Cards */}
             <div className="space-y-6">

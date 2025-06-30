@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { X, Upload, Camera, FileText, Shield, CheckCircle, AlertCircle, Eye, DollarSign, Bot } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { X, Upload, Camera, FileText, Shield, CheckCircle, AlertCircle, Eye, DollarSign, Bot, Calculator, Clock, Zap, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../hooks/useAuth';
 import { useLoans } from '../../hooks/useLoans';
@@ -7,6 +7,7 @@ import { useAgreements } from '../../hooks/useAgreements';
 import { useTranslation } from '../../utils/translations';
 import { useStore } from '../../store/useStore';
 import { verifyGovernmentId, verifyMedicalPrescription, validateLoanRequest } from '../../utils/verificationUtils';
+import { calculateInterestRate, calculateLoanMetrics } from '../../utils/interestRateCalculator';
 import TermsAcceptanceModal from './TermsAcceptanceModal';
 import toast from 'react-hot-toast';
 
@@ -31,6 +32,8 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
     medical: false,
     documents: false
   });
+  const [calculatingRate, setCalculatingRate] = useState(false);
+  const [interestRateData, setInterestRateData] = useState<any>(null);
 
   // Form data
   const [formData, setFormData] = useState({
@@ -70,6 +73,46 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
     { value: 'high', label: 'High Priority', color: 'text-orange-600 bg-orange-50' },
     { value: 'critical', label: 'Critical/Emergency', color: 'text-red-600 bg-red-50' }
   ];
+
+  // Calculate interest rate and repayment amount when amount, tenure, or purpose changes
+  useEffect(() => {
+    const calculateRate = async () => {
+      if (
+        formData.amount && 
+        formData.tenureDays && 
+        formData.purpose &&
+        parseFloat(formData.amount) > 0 &&
+        parseInt(formData.tenureDays) > 0
+      ) {
+        setCalculatingRate(true);
+        try {
+          const result = await calculateInterestRate({
+            amount: parseFloat(formData.amount),
+            tenureDays: parseInt(formData.tenureDays),
+            purpose: formData.purpose,
+            urgency: formData.urgency as any,
+            medicalVerified: formData.purpose === 'medical' ? verificationStatus.medical : undefined,
+            borrowerCreditScore: 750, // Default credit score
+            borrowerRepaymentHistory: currentUser?.stats?.successfulRepayments || 0
+          });
+          
+          setInterestRateData(result);
+          setFormData(prev => ({
+            ...prev,
+            interestRate: result.interestRate.toString()
+          }));
+        } catch (error) {
+          console.error('Error calculating interest rate:', error);
+        } finally {
+          setCalculatingRate(false);
+        }
+      } else {
+        setInterestRateData(null);
+      }
+    };
+    
+    calculateRate();
+  }, [formData.amount, formData.tenureDays, formData.purpose, formData.urgency, verificationStatus.medical, currentUser?.stats?.successfulRepayments]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -235,6 +278,7 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
       documents: false
     });
     setLoanDataForTerms(null);
+    setInterestRateData(null);
   };
 
   const nextStep = () => {
@@ -245,6 +289,14 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
 
   const selectedPurpose = purposes.find(p => p.value === formData.purpose);
   const requiresVerification = selectedPurpose?.requiresVerification;
+
+  // Calculate loan metrics for display
+  const loanMetrics = formData.amount && formData.interestRate && formData.tenureDays ? 
+    calculateLoanMetrics(
+      parseFloat(formData.amount), 
+      parseFloat(formData.interestRate), 
+      parseInt(formData.tenureDays)
+    ) : null;
 
   return (
     <>
@@ -346,7 +398,7 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                               Amount (₹) *
@@ -367,33 +419,20 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
 
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Interest Rate (%) *
-                            </label>
-                            <input
-                              type="number"
-                              value={formData.interestRate}
-                              onChange={(e) => handleInputChange('interestRate', e.target.value)}
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              placeholder="5.0"
-                              min="0"
-                              max="20"
-                              step="0.1"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
                               Tenure (Days) *
                             </label>
-                            <input
-                              type="number"
-                              value={formData.tenureDays}
-                              onChange={(e) => handleInputChange('tenureDays', e.target.value)}
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              placeholder="30"
-                              min="7"
-                              max="365"
-                            />
+                            <div className="relative">
+                              <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                              <input
+                                type="number"
+                                value={formData.tenureDays}
+                                onChange={(e) => handleInputChange('tenureDays', e.target.value)}
+                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="30"
+                                min="7"
+                                max="365"
+                              />
+                            </div>
                           </div>
                         </div>
 
@@ -417,6 +456,54 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
                               </button>
                             ))}
                           </div>
+                        </div>
+
+                        {/* AI-Calculated Interest Rate */}
+                        <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4 border border-blue-200">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center space-x-2">
+                              <Calculator className="text-blue-600" size={20} />
+                              <h4 className="font-medium text-gray-900">AI-Calculated Interest Rate</h4>
+                            </div>
+                            {calculatingRate ? (
+                              <div className="flex items-center space-x-2 text-blue-600">
+                                <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                                <span className="text-sm">Calculating...</span>
+                              </div>
+                            ) : interestRateData ? (
+                              <div className="text-lg font-bold text-blue-600">
+                                {interestRateData.interestRate}%
+                              </div>
+                            ) : (
+                              <div className="text-sm text-gray-500">
+                                Enter loan details
+                              </div>
+                            )}
+                          </div>
+
+                          {interestRateData && (
+                            <div className="space-y-3">
+                              <div className="grid grid-cols-2 gap-2 text-sm">
+                                <div className="bg-white p-2 rounded border border-blue-100">
+                                  <div className="text-gray-500">Repayment Amount</div>
+                                  <div className="font-semibold text-gray-900">₹{interestRateData.repaymentAmount.toLocaleString('en-IN', {maximumFractionDigits: 0})}</div>
+                                </div>
+                                <div className="bg-white p-2 rounded border border-blue-100">
+                                  <div className="text-gray-500">Platform Fee</div>
+                                  <div className="font-semibold text-gray-900">
+                                    {interestRateData.platformFeePercentage}% of interest
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div className="text-xs text-gray-600">
+                                <div className="flex items-start space-x-1">
+                                  <Info size={12} className="mt-0.5 flex-shrink-0" />
+                                  <div>{interestRateData.explanation}</div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -652,7 +739,7 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
                           </div>
                           <div>
                             <span className="text-sm text-gray-500">Amount:</span>
-                            <p className="font-medium">₹{formData.amount}</p>
+                            <p className="font-medium">₹{parseFloat(formData.amount).toLocaleString('en-IN')}</p>
                           </div>
                           <div>
                             <span className="text-sm text-gray-500">Interest Rate:</span>
@@ -673,6 +760,51 @@ const PostLoanModal: React.FC<PostLoanModalProps> = ({ isOpen, onClose }) => {
                           <p className="mt-1 text-sm">{formData.description}</p>
                         </div>
                       </div>
+
+                      {/* Loan Metrics */}
+                      {loanMetrics && (
+                        <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4 border border-blue-200">
+                          <h4 className="font-medium text-gray-900 mb-3 flex items-center space-x-2">
+                            <Calculator className="text-blue-600" size={16} />
+                            <span>Loan Metrics</span>
+                          </h4>
+                          
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="bg-white p-3 rounded-lg border border-blue-100">
+                              <div className="text-sm text-gray-500">Total Repayment</div>
+                              <div className="text-lg font-bold text-gray-900">₹{loanMetrics.totalRepayment.toLocaleString('en-IN')}</div>
+                            </div>
+                            
+                            <div className="bg-white p-3 rounded-lg border border-blue-100">
+                              <div className="text-sm text-gray-500">Interest Amount</div>
+                              <div className="text-lg font-bold text-blue-600">₹{loanMetrics.interest.toLocaleString('en-IN')}</div>
+                            </div>
+                            
+                            <div className="bg-white p-3 rounded-lg border border-blue-100">
+                              <div className="text-sm text-gray-500">Platform Fee</div>
+                              <div className="text-lg font-bold text-purple-600">
+                                ₹{loanMetrics.platformFee.toLocaleString('en-IN')}
+                                <span className="text-xs text-gray-500 ml-1">
+                                  ({loanMetrics.platformFeePercentage}% of interest)
+                                </span>
+                              </div>
+                            </div>
+                            
+                            <div className="bg-white p-3 rounded-lg border border-blue-100">
+                              <div className="text-sm text-gray-500">Effective APR</div>
+                              <div className="text-lg font-bold text-green-600">{loanMetrics.effectiveAPR}%</div>
+                            </div>
+                          </div>
+                          
+                          <div className="mt-3 text-xs text-gray-600 flex items-start space-x-2">
+                            <Info size={12} className="mt-0.5 flex-shrink-0" />
+                            <div>
+                              The platform fee is calculated as a percentage of the interest amount based on the interest rate tier. 
+                              This fee is deducted from the interest paid by the borrower, not from the principal amount.
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
                       {/* Verification Status */}
                       <div className="border border-gray-200 rounded-lg p-4">

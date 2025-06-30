@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { X, FileText, Shield, AlertTriangle, Check, Download } from 'lucide-react';
+import { X, FileText, Shield, AlertTriangle, Check, Download, Calculator } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PDFGenerator } from '../../utils/pdfGenerator';
+import { calculateLoanMetrics } from '../../utils/interestRateCalculator';
 
 interface TermsAcceptanceModalProps {
   isOpen: boolean;
@@ -63,7 +64,12 @@ const TermsAcceptanceModal: React.FC<TermsAcceptanceModalProps> = ({
   const interestRate = loanData.interestRate || 0;
   const tenure = loanData.tenure || loanData.tenureDays || 0;
   
-  const repaymentAmount = amount * (1 + (interestRate / 100) * (tenure / 365));
+  // Calculate loan metrics
+  const loanMetrics = calculateLoanMetrics(amount, interestRate, tenure);
+  const repaymentAmount = loanMetrics.totalRepayment;
+  const platformFeePercentage = loanMetrics.platformFeePercentage;
+  const platformFee = loanMetrics.platformFee;
+  
   const repaymentDate = new Date();
   repaymentDate.setDate(repaymentDate.getDate() + tenure);
 
@@ -121,6 +127,49 @@ const TermsAcceptanceModal: React.FC<TermsAcceptanceModalProps> = ({
                 </div>
               </div>
 
+              {/* Payment Breakdown */}
+              <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg p-4 mb-6 border border-blue-100">
+                <div className="flex items-center space-x-2 mb-3">
+                  <Calculator className="text-blue-600" size={18} />
+                  <h3 className="font-semibold text-gray-900">Payment Breakdown</h3>
+                </div>
+                
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Principal Amount:</span>
+                    <span className="font-medium">₹{amount.toLocaleString()}</span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Interest ({interestRate}% p.a.):</span>
+                    <span className="font-medium">₹{loanMetrics.interest.toLocaleString()}</span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center space-x-1">
+                      <span className="text-gray-600">Platform Fee ({platformFeePercentage}% of interest):</span>
+                      <span className="text-xs text-blue-600 cursor-help" title="Platform fee is calculated as a percentage of the interest amount based on the interest rate tier">ⓘ</span>
+                    </div>
+                    <span className="font-medium">₹{platformFee.toLocaleString()}</span>
+                  </div>
+                  
+                  <div className="border-t border-blue-200 pt-2 mt-2">
+                    <div className="flex justify-between items-center font-semibold">
+                      <span className="text-gray-900">Total Repayment Amount:</span>
+                      <span className="text-blue-700">₹{repaymentAmount.toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="mt-3 text-xs text-gray-500 flex items-start space-x-2">
+                  <AlertTriangle size={12} className="flex-shrink-0 mt-0.5" />
+                  <div>
+                    The platform fee is deducted from the interest amount and does not affect your principal. 
+                    The total repayment amount is what you'll need to pay back by the due date.
+                  </div>
+                </div>
+              </div>
+
               {/* Key Terms */}
               <div className="space-y-4 mb-6">
                 <h3 className="text-lg font-semibold text-gray-900">Key Terms & Conditions</h3>
@@ -146,7 +195,14 @@ const TermsAcceptanceModal: React.FC<TermsAcceptanceModalProps> = ({
                     <FileText className="text-blue-500 mt-1" size={16} />
                     <div>
                       <h4 className="font-medium text-gray-900">Platform Fees</h4>
-                      <p className="text-sm text-gray-600">1.5-2% platform fee will be deducted from the funded amount. This covers verification, processing, and blockchain security.</p>
+                      <p className="text-sm text-gray-600">
+                        Platform fee is calculated as a percentage of the interest amount based on the interest rate tier:
+                        <ul className="mt-1 ml-4 list-disc">
+                          <li>Interest rate &lt; 5%: 1.5% of interest</li>
+                          <li>Interest rate 5-10%: 3.5% of interest</li>
+                          <li>Interest rate &gt; 10%: 4.5% of interest</li>
+                        </ul>
+                      </p>
                     </div>
                   </div>
 
