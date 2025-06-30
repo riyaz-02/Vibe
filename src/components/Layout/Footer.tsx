@@ -66,6 +66,17 @@ const Footer: React.FC = () => {
                 <li><a href="#" className="hover:text-white transition-colors">Accessibility</a></li>
               </ul>
             </div>
+            
+            {/* Legal Links */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Legal</h3>
+              <ul className="space-y-2 text-gray-300 text-sm">
+                <li><a href="#" className="hover:text-white transition-colors">Privacy Policy</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Terms of Service</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Fair Practices Code</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Grievance Policy</a></li>
+              </ul>
+            </div>
 
             {/* Contact Information */}
             <div>
@@ -86,16 +97,6 @@ const Footer: React.FC = () => {
               </div>
             </div>
 
-            {/* Legal Links */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Legal</h3>
-              <ul className="space-y-2 text-gray-300 text-sm">
-                <li><a href="#" className="hover:text-white transition-colors">Privacy Policy</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Terms of Service</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Fair Practices Code</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Grievance Policy</a></li>
-              </ul>
-            </div>
           </div>
 
           {/* Bottom Section */}
@@ -103,7 +104,7 @@ const Footer: React.FC = () => {
             <div className="flex flex-col md:flex-row justify-between items-center">
               <div className="flex items-center space-x-6 mb-4 md:mb-0">
                 <span className="text-gray-400 text-sm">
-                  © 2025 Vibe. Platform fee: 4.5% of principal. Lending involves risks.
+                  © 2025 Vibe. P2P Lending and Burrowing Platform
                 </span>
               </div>
               
