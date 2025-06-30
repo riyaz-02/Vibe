@@ -445,7 +445,7 @@ const LoanCard: React.FC<LoanCardProps> = ({ loan, onLend }) => {
                   <div>
                     <p className="text-sm text-gray-500">Platform Fee</p>
                     <p className="text-lg font-bold text-purple-600">
-                      {formatCurrency(parseFloat(lendAmount) * 0.045)}
+                      {formatCurrency(parseFloat(lendAmount) * 0.045*.001)}
                       <span className="text-xs text-gray-500 ml-1">(4.5%)</span>
                     </p>
                   </div>
