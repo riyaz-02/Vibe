@@ -7,7 +7,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../lib/supabase';
 import { mockUsers } from '../../utils/mockData';
 import AgreementsSection from './AgreementsSection';
-import OrderHistory from '../Stripe/OrderHistory';
 import SubscriptionStatus from '../Stripe/SubscriptionStatus';
 import toast from 'react-hot-toast';
 
@@ -610,9 +609,6 @@ const Profile: React.FC = () => {
 
       {/* Subscription Status */}
       <SubscriptionStatus className="mb-4" />
-
-      {/* Order History */}
-      <OrderHistory className="mb-4" />
 
       {/* Stats Grid */}
       <motion.div
