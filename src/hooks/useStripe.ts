@@ -4,7 +4,9 @@ import { useAuth } from './useAuth';
 import { supabase } from '../lib/supabase';
 import { StripeProduct } from '../stripe-config';
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY!);
+// Check if Stripe key is available and valid
+const stripeKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+const stripePromise = stripeKey ? loadStripe(stripeKey) : null;
 
 export interface StripeCheckoutOptions {
   priceId: string;
@@ -51,6 +53,10 @@ export function useStripe() {
 
     if (!supabase) {
       throw new Error('Supabase client not available');
+    }
+
+    if (!stripePromise) {
+      throw new Error('Stripe is not configured. Please check your environment variables.');
     }
 
     setLoading(true);
@@ -187,5 +193,6 @@ export function useStripe() {
     fetchUserOrders,
     cancelSubscription,
     purchaseProduct,
+    stripeConfigured: !!stripePromise,
   };
 }
