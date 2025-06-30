@@ -21,11 +21,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, className = '' }) =>
       return;
     }
 
-    if (!stripeConfigured) {
-      toast.error('Payment system is not configured. Please check your environment variables.');
-      return;
-    }
-
     try {
       await purchaseProduct(product);
     } catch (error: any) {

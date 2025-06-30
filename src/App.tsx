@@ -27,15 +27,6 @@ function App() {
   const { isVoiceNavigationActive, currentLanguage } = useStore();
   const { loading } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [demoMode, setDemoMode] = useState(false);
-
-  useEffect(() => {
-    // Check if we're in demo mode (no Supabase connection)
-    if (!supabase) {
-      setDemoMode(true);
-      console.log('🎯 Running in demo mode - Supabase not configured');
-    }
-  }, []);
 
   useEffect(() => {
     // Manage voice navigation
@@ -69,21 +60,11 @@ function App() {
                 <div className="text-left">
                   <h3 className="font-medium text-blue-900 mb-1">Setting up your experience</h3>
                   <p className="text-sm text-blue-700">
-                    {demoMode 
-                      ? 'Running in demo mode with sample data'
-                      : 'Connecting to secure servers...'
-                    }
+                    Connecting to secure servers...
                   </p>
                 </div>
               </div>
             </div>
-            
-            {demoMode && (
-              <div className="text-xs text-gray-500">
-                <p>💡 To enable full functionality:</p>
-                <p>Configure your Supabase credentials in .env file</p>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -93,31 +74,6 @@ function App() {
   return (
     <Router>
       <div className="min-h-screen bg-gray-50 flex flex-col">
-        {/* Demo Mode Banner */}
-        {demoMode && (
-          <div className="bg-gradient-to-r from-orange-100 to-yellow-100 border-b border-orange-200 px-4 py-3">
-            <div className="max-w-7xl mx-auto">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <span className="text-orange-600">🎯</span>
-                  <p className="text-orange-800 text-sm">
-                    <strong>Demo Mode:</strong> Running with sample data. 
-                    <span className="hidden sm:inline"> To enable full functionality, configure your Supabase credentials.</span>
-                  </p>
-                </div>
-                <a 
-                  href="https://supabase.com" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-orange-600 hover:text-orange-700 text-sm font-medium"
-                >
-                  Get Supabase →
-                </a>
-              </div>
-            </div>
-          </div>
-        )}
-        
         <Navbar onAuthClick={() => setShowAuthModal(true)} />
         
         <main className="flex-grow">
