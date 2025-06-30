@@ -243,16 +243,18 @@ export const calculateLoanMetrics = (
   const principal = amount;
   const rate = interestRate / 100;
   const time = tenureDays / 365;
-  const platformFee=0.045 * principal;
-  const interest = principal * rate * time;
-  const totalRepayment = principal + interest + platformFee;
-  const dailyRepayment = totalRepayment / tenureDays;
-  
+
   // Fixed platform fee percentage of 4.5% of principal amount
   const platformFeePercentage = 4.5;
   
   // Calculate platform fee
   const platformFee = principal * (platformFeePercentage / 10000);
+  
+  const interest = principal * rate * time;
+  const totalRepayment = principal + interest + platformFee;
+  const dailyRepayment = totalRepayment / tenureDays;
+  
+  
   
   return {
     principal,
