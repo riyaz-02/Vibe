@@ -51,14 +51,67 @@ serve(async (req) => {
       throw new Error("Minimum amount is ₹100");
     }
 
+    // Ensure user profile exists
+    let { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (profileError) {
+      throw new Error(`Profile check failed: ${profileError.message}`);
+    }
+
+    // Create profile if it doesn't exist
+    if (!profile) {
+      console.log("Creating profile for user:", user.id);
+      const { data: newProfile, error: createProfileError } = await supabase
+        .from("profiles")
+        .insert({
+          id: user.id,
+          name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
+          email: user.email || '',
+          phone: user.user_metadata?.phone || null,
+          avatar_url: user.user_metadata?.avatar_url || null,
+          is_verified: false,
+          language: 'en',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select("id")
+        .single();
+
+      if (createProfileError) {
+        // If profile creation failed due to duplicate key (race condition), try to fetch again
+        if (createProfileError.code === '23505') {
+          const { data: existingProfile, error: refetchError } = await supabase
+            .from("profiles")
+            .select("id")
+            .eq("id", user.id)
+            .single();
+
+          if (refetchError) throw new Error(`Profile refetch failed: ${refetchError.message}`);
+          profile = existingProfile;
+        } else {
+          throw new Error(`Profile creation failed: ${createProfileError.message}`);
+        }
+      } else {
+        profile = newProfile;
+      }
+    }
+
     // Get or create Stripe customer
     let { data: customer, error: customerError } = await supabase
       .from("customers")
       .select("stripe_customer_id")
       .eq("user_id", user.id)
-      .single();
+      .maybeSingle();
 
     if (customerError) {
+      throw new Error(`Customer fetch failed: ${customerError.message}`);
+    }
+
+    if (!customer) {
       // Create new customer if not found
       const stripeCustomer = await stripe.customers.create({
         email: user.email,
@@ -67,12 +120,20 @@ serve(async (req) => {
         },
       });
 
-      await supabase.from("customers").insert({
-        user_id: user.id,
-        stripe_customer_id: stripeCustomer.id,
-      });
+      const { data: newCustomer, error: createCustomerError } = await supabase
+        .from("customers")
+        .insert({
+          user_id: user.id,
+          stripe_customer_id: stripeCustomer.id,
+        })
+        .select("stripe_customer_id")
+        .single();
 
-      customer = { stripe_customer_id: stripeCustomer.id };
+      if (createCustomerError) {
+        throw new Error(`Customer creation failed: ${createCustomerError.message}`);
+      }
+
+      customer = newCustomer;
     }
 
     // Create payment intent for wallet top-up

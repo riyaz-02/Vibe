@@ -70,16 +70,70 @@ serve(async (req) => {
       throw new Error("Payment verification failed");
     }
 
+    // Ensure user profile exists before creating wallet
+    let { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (profileError) {
+      throw new Error(`Profile check failed: ${profileError.message}`);
+    }
+
+    // Create profile if it doesn't exist
+    if (!profile) {
+      console.log("Creating profile for user:", user.id);
+      const { data: newProfile, error: createProfileError } = await supabase
+        .from("profiles")
+        .insert({
+          id: user.id,
+          name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
+          email: user.email || '',
+          phone: user.user_metadata?.phone || null,
+          avatar_url: user.user_metadata?.avatar_url || null,
+          is_verified: false,
+          language: 'en',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select("id")
+        .single();
+
+      if (createProfileError) {
+        // If profile creation failed due to duplicate key (race condition), try to fetch again
+        if (createProfileError.code === '23505') {
+          const { data: existingProfile, error: refetchError } = await supabase
+            .from("profiles")
+            .select("id")
+            .eq("id", user.id)
+            .single();
+
+          if (refetchError) throw new Error(`Profile refetch failed: ${refetchError.message}`);
+          profile = existingProfile;
+        } else {
+          throw new Error(`Profile creation failed: ${createProfileError.message}`);
+        }
+      } else {
+        profile = newProfile;
+      }
+    }
+
     // Get or create user wallet
     let { data: wallet, error: walletError } = await supabase
       .from("wallets")
       .select("*")
       .eq("user_id", user.id)
       .eq("currency", "INR")
-      .single();
+      .maybeSingle();
 
     if (walletError) {
-      // Create wallet if it doesn't exist
+      throw new Error(`Wallet fetch failed: ${walletError.message}`);
+    }
+
+    // Create wallet if it doesn't exist
+    if (!wallet) {
+      console.log("Creating wallet for user:", user.id);
       const { data: newWallet, error: createError } = await supabase
         .from("wallets")
         .insert({
@@ -90,8 +144,24 @@ serve(async (req) => {
         .select()
         .single();
 
-      if (createError) throw createError;
-      wallet = newWallet;
+      if (createError) {
+        // If creation failed due to duplicate key (race condition), try to fetch again
+        if (createError.code === '23505') {
+          const { data: existingWallet, error: refetchError } = await supabase
+            .from("wallets")
+            .select("*")
+            .eq("user_id", user.id)
+            .eq("currency", "INR")
+            .single();
+
+          if (refetchError) throw new Error(`Wallet refetch failed: ${refetchError.message}`);
+          wallet = existingWallet;
+        } else {
+          throw new Error(`Wallet creation failed: ${createError.message}`);
+        }
+      } else {
+        wallet = newWallet;
+      }
     }
 
     // Update wallet balance
@@ -119,7 +189,7 @@ serve(async (req) => {
       .select()
       .single();
 
-    if (transactionError) throw transactionError;
+    if (transactionError) throw new Error(`Transaction creation failed: ${transactionError.message}`);
 
     // Update wallet balance
     const { error: updateError } = await supabase
@@ -127,7 +197,7 @@ serve(async (req) => {
       .update({ balance: balanceAfter })
       .eq("id", wallet.id);
 
-    if (updateError) throw updateError;
+    if (updateError) throw new Error(`Wallet update failed: ${updateError.message}`);
 
     return new Response(
       JSON.stringify({

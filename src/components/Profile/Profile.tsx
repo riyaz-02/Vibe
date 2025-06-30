@@ -107,7 +107,7 @@ const Profile: React.FC = () => {
         return;
       }
 
-      // Fetch user profile with related data
+      // Use maybeSingle() to handle cases where profile doesn't exist
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select(`
@@ -117,11 +117,23 @@ const Profile: React.FC = () => {
           badges(*)
         `)
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (profileError && profileError.code !== 'PGRST116') {
+      if (profileError) {
         console.error('Error fetching profile:', profileError);
         setProfileData(mockUsers[0]);
+        setLoading(false);
+        return;
+      }
+
+      // If no profile exists, use the current user data from the store
+      if (!profile) {
+        console.log('No profile found, using current user data');
+        if (currentUser) {
+          setProfileData(currentUser);
+        } else {
+          setProfileData(mockUsers[0]);
+        }
         setLoading(false);
         return;
       }
@@ -157,66 +169,34 @@ const Profile: React.FC = () => {
         // Continue with profile loading even if badge awarding fails
       }
 
-      if (profile) {
-        const formattedProfile = {
-          id: profile.id,
-          name: profile.name,
-          email: profile.email,
-          phone: profile.phone,
-          avatar: profile.avatar_url || 'https://images.pexels.com/photos/771742/pexels-photo-771742.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-          isVerified: profile.is_verified || false,
-          badges: profile.badges || [],
-          stats: {
-            totalLoansGiven,
-            totalLoansTaken,
-            successfulRepayments,
-            averageRating: profile.user_stats?.average_rating || 0,
-            totalAmountLent,
-            totalAmountBorrowed
-          },
-          createdAt: new Date(profile.created_at),
-          language: profile.language || 'en',
-          accessibilitySettings: profile.accessibility_settings || {
-            voiceNavigation: false,
-            highContrast: false,
-            screenReader: false,
-            fontSize: 'medium'
-          }
-        };
+      const formattedProfile = {
+        id: profile.id,
+        name: profile.name,
+        email: profile.email,
+        phone: profile.phone,
+        avatar: profile.avatar_url || 'https://images.pexels.com/photos/771742/pexels-photo-771742.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        isVerified: profile.is_verified || false,
+        badges: profile.badges || [],
+        stats: {
+          totalLoansGiven,
+          totalLoansTaken,
+          successfulRepayments,
+          averageRating: profile.user_stats?.average_rating || 0,
+          totalAmountLent,
+          totalAmountBorrowed
+        },
+        createdAt: new Date(profile.created_at),
+        language: profile.language || 'en',
+        accessibilitySettings: profile.accessibility_settings || {
+          voiceNavigation: false,
+          highContrast: false,
+          screenReader: false,
+          fontSize: 'medium'
+        }
+      };
 
-        setProfileData(formattedProfile);
-        setCurrentUser(formattedProfile);
-      } else {
-        // Create basic profile from auth user
-        const basicProfile = {
-          id: user.id,
-          name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
-          email: user.email || '',
-          phone: '',
-          avatar: 'https://images.pexels.com/photos/771742/pexels-photo-771742.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-          isVerified: false,
-          badges: [],
-          stats: {
-            totalLoansGiven,
-            totalLoansTaken,
-            successfulRepayments,
-            averageRating: 0,
-            totalAmountLent,
-            totalAmountBorrowed
-          },
-          createdAt: new Date(user.created_at || Date.now()),
-          language: 'en',
-          accessibilitySettings: {
-            voiceNavigation: false,
-            highContrast: false,
-            screenReader: false,
-            fontSize: 'medium'
-          }
-        };
-
-        setProfileData(basicProfile);
-        setCurrentUser(basicProfile);
-      }
+      setProfileData(formattedProfile);
+      setCurrentUser(formattedProfile);
 
     } catch (error) {
       console.error('Error fetching profile data:', error);
