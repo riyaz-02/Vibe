@@ -57,6 +57,8 @@ export interface LoanRequest {
   likes: number;
   comments: Comment[];
   shares: number;
+  termsAccepted?: boolean;
+  termsAcceptedAt?: Date;
 }
 
 export interface Lender {
@@ -78,6 +80,30 @@ export interface MedicalVerification {
   prescriptionVerified: boolean;
   details: string;
   verifiedAt: Date;
+}
+
+export interface LoanAgreement {
+  id: string;
+  loanId: string;
+  borrowerId: string;
+  lenderId?: string;
+  agreementType: 'loan_request' | 'sanction_letter' | 'lending_proof';
+  agreementData: any;
+  pdfUrl?: string;
+  status: 'pending' | 'signed' | 'active' | 'completed' | 'cancelled';
+  signedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface AgreementSignature {
+  id: string;
+  agreementId: string;
+  signerId: string;
+  signatureType: 'borrower' | 'lender';
+  ipAddress?: string;
+  userAgent?: string;
+  signedAt: Date;
 }
 
 export type LoanPurpose = 

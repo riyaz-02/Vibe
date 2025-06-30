@@ -6,6 +6,7 @@ import { useTranslation } from '../../utils/translations';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../lib/supabase';
 import { mockUsers } from '../../utils/mockData';
+import AgreementsSection from './AgreementsSection';
 import toast from 'react-hot-toast';
 
 const Profile: React.FC = () => {
@@ -671,12 +672,21 @@ const Profile: React.FC = () => {
         )}
       </motion.div>
 
+      {/* Legal Documents & Agreements Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+      >
+        <AgreementsSection />
+      </motion.div>
+
       {/* Badges Section */}
       <motion.div
         className="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
+        transition={{ delay: 0.25 }}
       >
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold text-gray-900">{t('profile.badges')}</h2>
