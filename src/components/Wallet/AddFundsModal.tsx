@@ -64,7 +64,7 @@ const AddFundsModal: React.FC<AddFundsModalProps> = ({
                 <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                   <CreditCard className="text-white" size={20} />
                 </div>
-                <h2 className="text-xl font-bold text-gray-900">Add Funds</h2>
+                <h2 className="text-xl font-bold text-gray-900">Add Funds via Stripe</h2>
               </div>
               <button
                 onClick={onClose}
@@ -151,7 +151,7 @@ const AddFundsModal: React.FC<AddFundsModalProps> = ({
                 <div className="flex items-start space-x-2">
                   <Shield className="text-yellow-600 flex-shrink-0 mt-0.5" size={16} />
                   <div className="text-sm text-yellow-800">
-                    <p className="font-medium mb-1">Secure Payment</p>
+                    <p className="font-medium mb-1">Secure Payment via Stripe</p>
                     <p>Your payment is processed securely through Stripe. Funds will be instantly available in your Vibe Wallet.</p>
                   </div>
                 </div>

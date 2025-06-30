@@ -1012,4 +1012,347 @@ export class PDFGenerator {
       </html>
     `;
   }
+
+  static generateLoanClosureCertificate(loanData: any): string {
+    const currentDate = new Date().toLocaleDateString('en-IN');
+    const closureDate = new Date().toLocaleDateString('en-IN');
+    const loanStartDate = new Date(loanData.created_at || Date.now());
+    const loanEndDate = new Date(loanData.repaid_at || Date.now());
+    
+    // Calculate actual loan duration in days
+    const loanDurationDays = Math.round((loanEndDate.getTime() - loanStartDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Loan Closure Certificate</title>
+        <style>
+          body {
+            font-family: 'Times New Roman', serif;
+            line-height: 1.6;
+            color: #000;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px;
+            background: white;
+          }
+          .header {
+            text-align: center;
+            border-bottom: 3px solid #0891b2;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+          }
+          .company-logo {
+            font-size: 28px;
+            font-weight: bold;
+            color: #0891b2;
+            margin-bottom: 10px;
+          }
+          .company-info {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.4;
+          }
+          .document-title {
+            font-size: 22px;
+            font-weight: bold;
+            text-align: center;
+            margin: 30px 0;
+            text-transform: uppercase;
+            color: #1f2937;
+            background: #ecfeff;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #0891b2;
+          }
+          .certificate-number {
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: bold;
+            color: #0891b2;
+            font-size: 14px;
+          }
+          .section {
+            margin-bottom: 25px;
+          }
+          .section-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #1f2937;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 5px;
+          }
+          .loan-details {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            margin: 20px 0;
+          }
+          .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 5px 0;
+            border-bottom: 1px dotted #cbd5e1;
+          }
+          .detail-label {
+            font-weight: bold;
+            color: #374151;
+          }
+          .detail-value {
+            color: #1f2937;
+          }
+          .highlight {
+            background: #cffafe;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: bold;
+          }
+          .closure-confirmation {
+            background: #f0fdfa;
+            border: 2px solid #0d9488;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 25px 0;
+            text-align: center;
+          }
+          .signature-section {
+            margin-top: 50px;
+            display: flex;
+            justify-content: space-between;
+          }
+          .signature-box {
+            width: 30%;
+            border-top: 1px solid #000;
+            padding-top: 10px;
+            text-align: center;
+          }
+          .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #e5e7eb;
+            font-size: 10px;
+            color: #6b7280;
+            text-align: center;
+          }
+          .legal-text {
+            font-size: 11px;
+            text-align: justify;
+            line-height: 1.5;
+          }
+          .certificate-seal {
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            border: 3px solid #0891b2;
+            border-radius: 50%;
+            width: 150px;
+            height: 150px;
+            margin: 30px auto;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: #ecfeff;
+          }
+          .payment-summary {
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+          }
+          .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+          }
+          .summary-table th, .summary-table td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+          }
+          .summary-table th {
+            background-color: #f0f9ff;
+            font-weight: bold;
+            color: #0c4a6e;
+          }
+          .summary-table tr:last-child td {
+            border-bottom: none;
+            font-weight: bold;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="company-logo">VIBE</div>
+          <div class="company-info">
+            ${this.COMPANY_INFO.name}<br>
+            ${this.COMPANY_INFO.address}<br>
+            Website: ${this.COMPANY_INFO.website} | Email: ${this.COMPANY_INFO.email}<br>
+            Phone: ${this.COMPANY_INFO.phone}<br>
+            CIN: ${this.COMPANY_INFO.cin} | RBI License: ${this.COMPANY_INFO.rbiLicense}
+          </div>
+        </div>
+
+        <div class="certificate-number">
+          Certificate No: VBL-LC-${new Date().getFullYear()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}<br>
+          Date: ${currentDate}
+        </div>
+
+        <div class="document-title">
+          Loan Closure Certificate
+        </div>
+
+        <div class="certificate-seal">
+          <div style="font-size: 16px; font-weight: bold; color: #0891b2;">PAID IN FULL</div>
+          <div style="font-size: 12px; color: #0891b2;">LOAN CLOSED</div>
+          <div style="font-size: 10px; color: #0891b2; margin-top: 5px;">${closureDate}</div>
+        </div>
+
+        <div class="closure-confirmation">
+          <h3 style="color: #0d9488; margin-bottom: 10px;">🎉 Congratulations!</h3>
+          <p style="margin: 0; font-size: 16px; color: #1f2937;">
+            This is to certify that the loan has been <strong>fully repaid</strong> and is now <strong>closed</strong>.
+          </p>
+        </div>
+
+        <div class="section">
+          <p>Dear <strong>${loanData.borrower?.name || 'Borrower'}</strong>,</p>
+          
+          <p>We are pleased to confirm that you have successfully repaid your loan in full. This certificate serves as official confirmation that your loan has been closed and you have no further obligations related to this loan.</p>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Loan Details</div>
+          <div class="loan-details">
+            <div class="detail-row">
+              <span class="detail-label">Loan ID:</span>
+              <span class="detail-value">${loanData.loan_id || 'N/A'}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Borrower Name:</span>
+              <span class="detail-value">${loanData.borrower?.name || 'N/A'}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Lender Name:</span>
+              <span class="detail-value">${loanData.lender?.name || 'N/A'}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Original Loan Amount:</span>
+              <span class="detail-value">₹${(loanData.loan_amount || 0).toLocaleString('en-IN')}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Interest Rate:</span>
+              <span class="detail-value">${loanData.interest_rate || 0}% per annum</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Loan Start Date:</span>
+              <span class="detail-value">${loanStartDate.toLocaleDateString('en-IN')}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Loan Closure Date:</span>
+              <span class="detail-value highlight">${loanEndDate.toLocaleDateString('en-IN')}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Actual Loan Duration:</span>
+              <span class="detail-value">${loanDurationDays} days</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Purpose:</span>
+              <span class="detail-value">${(loanData.purpose || 'General').charAt(0).toUpperCase() + (loanData.purpose || 'General').slice(1)}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Payment Summary</div>
+          <div class="payment-summary">
+            <table class="summary-table">
+              <tr>
+                <th>Description</th>
+                <th>Amount (₹)</th>
+              </tr>
+              <tr>
+                <td>Principal Amount</td>
+                <td>${(loanData.loan_amount || 0).toLocaleString('en-IN')}</td>
+              </tr>
+              <tr>
+                <td>Interest Amount</td>
+                <td>${((loanData.repayment_amount || 0) - (loanData.loan_amount || 0)).toLocaleString('en-IN')}</td>
+              </tr>
+              <tr>
+                <td>Platform Fee</td>
+                <td>${(loanData.platform_fee || 0).toLocaleString('en-IN')}</td>
+              </tr>
+              <tr>
+                <td>Total Amount Repaid</td>
+                <td>${(loanData.repayment_amount || 0).toLocaleString('en-IN')}</td>
+              </tr>
+            </table>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Closure Statement</div>
+          <div class="legal-text">
+            <p>This is to certify that:</p>
+            <ol>
+              <li>The borrower has repaid the loan in full, including principal and interest.</li>
+              <li>All obligations under the loan agreement have been fulfilled.</li>
+              <li>The loan account is now closed with a zero balance.</li>
+              <li>No further payments are due from the borrower related to this loan.</li>
+              <li>The lender acknowledges receipt of the full repayment amount.</li>
+              <li>This certificate serves as full and final settlement of the loan.</li>
+            </ol>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Credit Reporting</div>
+          <div class="legal-text">
+            <p>This loan closure has been reported to our internal credit system. The successful repayment of this loan will positively impact your borrower rating on the Vibe platform, which may help you secure better terms for future loans.</p>
+            
+            <p>Note: Vibe does not directly report to external credit bureaus, but maintains an internal credit scoring system for platform users.</p>
+          </div>
+        </div>
+
+        <div class="section">
+          <p>We thank you for your business and for choosing Vibe for your financial needs. We look forward to serving you again in the future.</p>
+          
+          <p>For any queries or assistance, please contact our customer support at ${this.COMPANY_INFO.email} or ${this.COMPANY_INFO.phone}.</p>
+        </div>
+
+        <div class="signature-section">
+          <div class="signature-box">
+            <strong>Borrower</strong><br>
+            ${loanData.borrower?.name || 'Borrower Name'}<br>
+            Date: ${currentDate}
+          </div>
+          <div class="signature-box">
+            <strong>Lender</strong><br>
+            ${loanData.lender?.name || 'Lender Name'}<br>
+            Date: ${currentDate}
+          </div>
+          <div class="signature-box">
+            <strong>Platform</strong><br>
+            Vibe Technologies Pvt. Ltd.<br>
+            Date: ${currentDate}
+          </div>
+        </div>
+
+        <div class="footer">
+          <p><strong>Regulatory Compliance:</strong> This certificate is issued under RBI License ${this.COMPANY_INFO.rbiLicense}.</p>
+          <p>This is a digitally generated certificate and is valid without physical signature as per IT Act, 2000.</p>
+          <p>For verification of this certificate, contact: ${this.COMPANY_INFO.email} | ${this.COMPANY_INFO.phone}</p>
+          <p>© 2025 Vibe Technologies Private Limited. All rights reserved.</p>
+        </div>
+      </body>
+      </html>
+    `;
+  }
 }

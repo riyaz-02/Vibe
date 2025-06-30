@@ -102,6 +102,55 @@ export function useAgreements() {
     }
   };
 
+  const createLoanClosureDocument = async (loanRepaymentData: any) => {
+    if (!user || !supabase) return { data: null, error: new Error('Not authenticated') };
+
+    try {
+      // Generate loan closure HTML
+      const closureHtml = PDFGenerator.generateLoanClosureCertificate(loanRepaymentData);
+      
+      // Generate PDF
+      const pdfUrl = await PDFGenerator.generatePDF(closureHtml, `loan-closure-${loanRepaymentData.loan_id}`);
+
+      const agreementData = {
+        loan_id: loanRepaymentData.loan_id,
+        loan_amount: loanRepaymentData.loan_amount,
+        repayment_amount: loanRepaymentData.repayment_amount,
+        interest_rate: loanRepaymentData.interest_rate,
+        platform_fee: loanRepaymentData.platform_fee,
+        net_amount_to_lender: loanRepaymentData.net_amount_to_lender,
+        borrower: loanRepaymentData.borrower,
+        lender: loanRepaymentData.lender,
+        purpose: loanRepaymentData.purpose,
+        created_at: loanRepaymentData.created_at,
+        repaid_at: loanRepaymentData.repaid_at || new Date().toISOString()
+      };
+
+      const { data, error } = await supabase
+        .from('loan_agreements')
+        .insert({
+          loan_id: loanRepaymentData.loan_id,
+          borrower_id: loanRepaymentData.borrower_id,
+          lender_id: loanRepaymentData.lender_id,
+          agreement_type: 'loan_closure',
+          agreement_data: agreementData,
+          pdf_url: pdfUrl,
+          status: 'completed',
+          signed_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      await fetchAgreements();
+      return { data, error: null };
+    } catch (error: any) {
+      console.error('Error creating loan closure document:', error);
+      return { data: null, error };
+    }
+  };
+
   const signAgreement = async (agreementId: string) => {
     if (!user || !supabase) return { error: new Error('Not authenticated') };
 
@@ -148,6 +197,7 @@ export function useAgreements() {
     agreements,
     loading,
     createLoanRequestAgreement,
+    createLoanClosureDocument,
     signAgreement,
     refetch: fetchAgreements
   };

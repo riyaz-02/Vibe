@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Wallet, Plus, Minus, CreditCard, TrendingUp, TrendingDown, Clock, RefreshCw } from 'lucide-react';
+import { Wallet, Plus, Minus, CreditCard, TrendingUp, TrendingDown, Clock, RefreshCw, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useWallet } from '../../hooks/useWallet';
 import AddFundsModal from './AddFundsModal';
+import WithdrawFundsModal from './WithdrawFundsModal';
 import toast from 'react-hot-toast';
 
 interface WalletCardProps {
@@ -12,6 +13,7 @@ interface WalletCardProps {
 const WalletCard: React.FC<WalletCardProps> = ({ className = '' }) => {
   const { wallet, transactions, loading, addFunds, refetch } = useWallet();
   const [showAddFunds, setShowAddFunds] = useState(false);
+  const [showWithdraw, setShowWithdraw] = useState(false);
   const [showTransactions, setShowTransactions] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -27,6 +29,17 @@ const WalletCard: React.FC<WalletCardProps> = ({ className = '' }) => {
       setShowAddFunds(false);
     } catch (error: any) {
       toast.error(error.message || 'Failed to add funds');
+    }
+  };
+
+  const handleWithdraw = async (data: any) => {
+    try {
+      // In a real implementation, this would call a withdrawal API
+      toast.success('Withdrawal request submitted successfully!');
+      toast.success('Funds will be transferred to your bank account within 72 hours');
+      setShowWithdraw(false);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to process withdrawal');
     }
   };
 
@@ -121,10 +134,10 @@ const WalletCard: React.FC<WalletCardProps> = ({ className = '' }) => {
           </motion.button>
           
           <motion.button
-            className="bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg p-3 flex items-center justify-center space-x-2 transition-all opacity-50 cursor-not-allowed"
+            onClick={() => setShowWithdraw(true)}
+            className="bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg p-3 flex items-center justify-center space-x-2 transition-all"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            disabled
           >
             <Minus size={18} />
             <span className="font-medium">Withdraw</span>
@@ -204,6 +217,14 @@ const WalletCard: React.FC<WalletCardProps> = ({ className = '' }) => {
         onClose={() => setShowAddFunds(false)}
         onAddFunds={handleAddFunds}
         loading={loading}
+      />
+
+      <WithdrawFundsModal
+        isOpen={showWithdraw}
+        onClose={() => setShowWithdraw(false)}
+        onWithdraw={handleWithdraw}
+        loading={loading}
+        walletBalance={wallet?.balance || 0}
       />
     </>
   );

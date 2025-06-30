@@ -1,41 +1,41 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
     const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
       {
         auth: {
           autoRefreshToken: false,
           persistSession: false,
         },
       }
-    )
+    );
 
-    const authHeader = req.headers.get('Authorization')!
-    const token = authHeader.replace('Bearer ', '')
-    const { data: user } = await supabase.auth.getUser(token)
+    const authHeader = req.headers.get("Authorization")!;
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
-    if (!user.user) {
-      throw new Error('User not authenticated')
+    if (authError || !user) {
+      throw new Error("User not authenticated");
     }
 
-    const { loanId, repaymentAmount } = await req.json()
+    const { loanId, repaymentAmount } = await req.json();
 
     // Get loan details
     const { data: loan, error: loanError } = await supabase
-      .from('loan_requests')
+      .from("loan_requests")
       .select(`
         *,
         loan_fundings(
@@ -44,109 +44,127 @@ serve(async (req) => {
           profiles!lender_id(name, email)
         )
       `)
-      .eq('id', loanId)
-      .eq('borrower_id', user.user.id)
-      .single()
+      .eq("id", loanId)
+      .eq("borrower_id", user.id)
+      .single();
 
     if (loanError || !loan) {
-      throw new Error('Loan not found or unauthorized')
+      throw new Error("Loan not found or unauthorized");
     }
 
-    if (loan.status !== 'funded') {
-      throw new Error('Loan is not in funded status')
+    if (loan.status !== "funded" && loan.status !== "active") {
+      throw new Error("Loan is not in a repayable status");
     }
 
     // Get borrower wallet
-    const { data: borrowerWallet } = await supabase
-      .from('wallets')
-      .select('*')
-      .eq('user_id', user.user.id)
-      .eq('currency', 'INR')
-      .single()
+    const { data: borrowerWallet, error: walletError } = await supabase
+      .from("wallets")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("currency", "INR")
+      .single();
 
-    if (!borrowerWallet || parseFloat(borrowerWallet.balance) < repaymentAmount) {
-      throw new Error('Insufficient wallet balance')
+    if (walletError || !borrowerWallet) {
+      throw new Error("Borrower wallet not found");
+    }
+
+    if (parseFloat(borrowerWallet.balance) < repaymentAmount) {
+      throw new Error("Insufficient wallet balance");
     }
 
     // Calculate platform fee (2%)
-    const platformFeeRate = 0.02
-    const platformFee = repaymentAmount * platformFeeRate
-    const netAmountToLender = repaymentAmount - platformFee
+    const platformFeeRate = 0.02;
+    const platformFee = repaymentAmount * platformFeeRate;
+    const netAmountToLender = repaymentAmount - platformFee;
 
     // Process repayment for each lender
     const repaymentPromises = loan.loan_fundings.map(async (funding: any) => {
-      const lenderShare = (funding.amount / loan.amount) * netAmountToLender
+      const lenderShare = (funding.amount / loan.amount) * netAmountToLender;
       
       // Get lender wallet
-      let { data: lenderWallet } = await supabase
-        .from('wallets')
-        .select('*')
-        .eq('user_id', funding.lender_id)
-        .eq('currency', 'INR')
-        .single()
+      let { data: lenderWallet, error: lenderWalletError } = await supabase
+        .from("wallets")
+        .select("*")
+        .eq("user_id", funding.lender_id)
+        .eq("currency", "INR")
+        .single();
 
-      if (!lenderWallet) {
+      if (lenderWalletError) {
         // Create lender wallet if doesn't exist
-        const { data: newWallet, error: walletError } = await supabase
-          .from('wallets')
+        const { data: newWallet, error: createError } = await supabase
+          .from("wallets")
           .insert({
             user_id: funding.lender_id,
             balance: 0,
-            currency: 'INR'
+            currency: "INR"
           })
           .select()
-          .single()
+          .single();
 
-        if (walletError) throw walletError
-        lenderWallet = newWallet
+        if (createError) throw createError;
+        lenderWallet = newWallet;
       }
 
       // Credit lender wallet
-      const lenderBalanceBefore = parseFloat(lenderWallet.balance)
-      const lenderBalanceAfter = lenderBalanceBefore + lenderShare
+      const lenderBalanceBefore = parseFloat(lenderWallet.balance);
+      const lenderBalanceAfter = lenderBalanceBefore + lenderShare;
 
-      await supabase
-        .from('wallet_transactions')
+      const { data: lenderTransaction, error: lenderTransactionError } = await supabase
+        .from("wallet_transactions")
         .insert({
           wallet_id: lenderWallet.id,
           user_id: funding.lender_id,
-          transaction_type: 'credit',
+          transaction_type: "credit",
           amount: lenderShare,
           balance_before: lenderBalanceBefore,
           balance_after: lenderBalanceAfter,
           description: `Loan repayment received - ₹${lenderShare.toFixed(2)}`,
-          reference_type: 'loan_repayment',
+          reference_type: "loan_repayment",
           reference_id: loanId,
           metadata: {
             loan_id: loanId,
-            borrower_id: user.user.id,
+            borrower_id: user.id,
             original_funding: funding.amount
           }
         })
+        .select()
+        .single();
+
+      if (lenderTransactionError) throw lenderTransactionError;
+
+      // Update lender wallet balance
+      const { error: updateLenderError } = await supabase
+        .from("wallets")
+        .update({ balance: lenderBalanceAfter })
+        .eq("id", lenderWallet.id);
+
+      if (updateLenderError) throw updateLenderError;
 
       return {
         lender_id: funding.lender_id,
+        lender_name: funding.profiles?.name,
+        lender_email: funding.profiles?.email,
         amount: lenderShare
-      }
-    })
+      };
+    });
 
-    const lenderPayments = await Promise.all(repaymentPromises)
+    const lenderPayments = await Promise.all(repaymentPromises);
 
     // Debit borrower wallet
-    const borrowerBalanceBefore = parseFloat(borrowerWallet.balance)
-    const borrowerBalanceAfter = borrowerBalanceBefore - repaymentAmount
+    const borrowerBalanceBefore = parseFloat(borrowerWallet.balance);
+    const borrowerBalanceAfter = borrowerBalanceBefore - repaymentAmount;
 
     const { data: borrowerTransaction, error: borrowerTransactionError } = await supabase
-      .from('wallet_transactions')
+      .from("wallet_transactions")
       .insert({
         wallet_id: borrowerWallet.id,
-        user_id: user.user.id,
-        transaction_type: 'debit',
+        user_id: user.id,
+        transaction_type: "debit",
         amount: repaymentAmount,
         balance_before: borrowerBalanceBefore,
         balance_after: borrowerBalanceAfter,
         description: `Loan repayment - ₹${repaymentAmount}`,
-        reference_type: 'loan_repayment',
+        reference_type: "loan_repayment",
         reference_id: loanId,
         metadata: {
           loan_id: loanId,
@@ -155,29 +173,97 @@ serve(async (req) => {
         }
       })
       .select()
-      .single()
+      .single();
 
-    if (borrowerTransactionError) throw borrowerTransactionError
+    if (borrowerTransactionError) throw borrowerTransactionError;
+
+    // Update borrower wallet balance
+    const { error: updateBorrowerError } = await supabase
+      .from("wallets")
+      .update({ balance: borrowerBalanceAfter })
+      .eq("id", borrowerWallet.id);
+
+    if (updateBorrowerError) throw updateBorrowerError;
+
+    // Get borrower profile
+    const { data: borrowerProfile, error: borrowerProfileError } = await supabase
+      .from("profiles")
+      .select("name, email")
+      .eq("id", user.id)
+      .single();
+
+    if (borrowerProfileError) throw borrowerProfileError;
 
     // Record loan repayment
-    await supabase
-      .from('loan_repayments')
+    const { data: repaymentRecord, error: repaymentError } = await supabase
+      .from("loan_repayments")
       .insert({
         loan_id: loanId,
-        borrower_id: user.user.id,
+        borrower_id: user.id,
         lender_id: loan.loan_fundings[0].lender_id, // Primary lender
         repayment_amount: repaymentAmount,
         platform_fee: platformFee,
         net_amount_to_lender: netAmountToLender,
         transaction_id: borrowerTransaction.id,
-        status: 'completed'
+        status: "completed",
+        repaid_at: new Date().toISOString()
       })
+      .select()
+      .single();
+
+    if (repaymentError) throw repaymentError;
 
     // Update loan status to completed
-    await supabase
-      .from('loan_requests')
-      .update({ status: 'completed' })
-      .eq('id', loanId)
+    const { error: updateLoanError } = await supabase
+      .from("loan_requests")
+      .update({ 
+        status: "completed",
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", loanId);
+
+    if (updateLoanError) throw updateLoanError;
+
+    // Create loan closure document
+    const closureData = {
+      loan_id: loanId,
+      borrower_id: user.id,
+      lender_id: loan.loan_fundings[0].lender_id,
+      loan_amount: loan.amount,
+      repayment_amount: repaymentAmount,
+      interest_rate: loan.interest_rate,
+      platform_fee: platformFee,
+      net_amount_to_lender: netAmountToLender,
+      purpose: loan.purpose,
+      created_at: loan.created_at,
+      repaid_at: new Date().toISOString(),
+      borrower: {
+        name: borrowerProfile.name,
+        email: borrowerProfile.email
+      },
+      lender: {
+        name: lenderPayments[0].lender_name,
+        email: lenderPayments[0].lender_email
+      }
+    };
+
+    // Create loan closure agreement
+    const { error: closureError } = await supabase
+      .from("loan_agreements")
+      .insert({
+        loan_id: loanId,
+        borrower_id: user.id,
+        lender_id: loan.loan_fundings[0].lender_id,
+        agreement_type: "loan_closure",
+        agreement_data: closureData,
+        status: "completed",
+        signed_at: new Date().toISOString()
+      });
+
+    if (closureError) {
+      console.error("Error creating loan closure document:", closureError);
+      // Continue with the process even if closure document creation fails
+    }
 
     return new Response(
       JSON.stringify({
@@ -186,21 +272,22 @@ serve(async (req) => {
         platformFee,
         netAmountToLender,
         newBorrowerBalance: borrowerBalanceAfter,
-        lenderPayments
+        lenderPayments,
+        closureDocumentCreated: !closureError
       }),
       {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       }
-    )
+    );
   } catch (error) {
-    console.error('Loan repayment error:', error)
+    console.error("Loan repayment error:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
       {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 400,
       }
-    )
+    );
   }
-})
+});
