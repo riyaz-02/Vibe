@@ -16,49 +16,57 @@ export const stripeProducts: StripeProduct[] = [
     id: 'prod_SanxmQQ4qkYU78',
     priceId: 'price_1RfcLDG3rwHz1Z4E5pLZtbAj',
     name: 'P3',
-    description: 'Premium lending plan with advanced features',
+    description: 'Premium enterprise plan with advanced lending features and priority support',
     price: 5000.00,
     currency: 'usd',
     mode: 'payment',
     features: [
-      'Advanced loan matching',
-      'Priority support',
-      'Enhanced analytics',
-      'Custom loan terms',
-      'Dedicated account manager'
+      'Unlimited loan requests and funding',
+      'Advanced AI risk assessment',
+      'Priority customer support',
+      'Custom lending terms',
+      'Advanced analytics dashboard',
+      'Dedicated account manager',
+      'White-label options',
+      'API access for integrations'
     ]
   },
   {
     id: 'prod_SanwoH3JZ835rh',
     priceId: 'price_1RfcKuG3rwHz1Z4E7AdXNyqO',
     name: 'P2',
-    description: 'Professional lending plan for serious lenders',
+    description: 'Professional plan for serious lenders with enhanced features',
     price: 1000.00,
     currency: 'usd',
     mode: 'payment',
     features: [
+      'Extended loan limits up to ₹5,00,000',
       'Professional loan tools',
-      'Extended loan limits',
-      'Priority verification',
-      'Advanced reporting',
-      'Email support'
+      'Priority verification process',
+      'Advanced reporting and analytics',
+      'Email and chat support',
+      'Bulk lending operations',
+      'Custom interest rate settings'
     ]
   },
   {
     id: 'prod_SaTx0bJvrWeFRQ',
     priceId: 'price_1RfIzoG3rwHz1Z4E29SKAJt4',
     name: 'Vibe',
-    description: 'Monthly subscription for continuous access',
+    description: 'Monthly subscription for continuous access to the Vibe platform',
     price: 10.00,
     currency: 'usd',
     mode: 'subscription',
     popular: true,
     features: [
       'Unlimited loan requests',
-      'Basic analytics',
+      'Basic AI verification',
       'Community support',
       'Mobile app access',
-      'Standard verification'
+      'Standard verification',
+      'Basic analytics',
+      'Social feed features',
+      'Voice navigation'
     ]
   }
 ];

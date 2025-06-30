@@ -8,7 +8,7 @@ import { useStripe } from '../../hooks/useStripe';
 
 const SuccessPage: React.FC = () => {
   const [searchParams] = useSearchParams();
-  const { fetchUserSubscription, fetchUserOrders } = useStripe();
+  const { fetchUserSubscription, fetchUserOrders, stripeConfigured } = useStripe();
   const [loading, setLoading] = useState(true);
   
   const success = searchParams.get('success');
@@ -24,19 +24,23 @@ const SuccessPage: React.FC = () => {
         origin: { y: 0.6 }
       });
 
-      // Refresh user data
+      // Refresh user data if Stripe is configured
       const refreshData = async () => {
-        setLoading(true);
-        await Promise.all([
-          fetchUserSubscription(),
-          fetchUserOrders()
-        ]);
+        if (stripeConfigured) {
+          setLoading(true);
+          await Promise.all([
+            fetchUserSubscription(),
+            fetchUserOrders()
+          ]);
+        }
         setLoading(false);
       };
 
       refreshData();
+    } else {
+      setLoading(false);
     }
-  }, [success]);
+  }, [success, stripeConfigured]);
 
   if (success !== 'true') {
     return (
@@ -76,7 +80,7 @@ const SuccessPage: React.FC = () => {
           </h1>
 
           <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            Thank you for your purchase. Your payment has been processed successfully.
+            Thank you for your purchase. Your payment has been processed successfully and you now have access to premium features.
           </p>
 
           {product && (
@@ -115,7 +119,7 @@ const SuccessPage: React.FC = () => {
               {product.mode === 'payment' && (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                   <p className="text-green-800 text-sm">
-                    Your one-time purchase is complete! You now have access to all features.
+                    Your one-time purchase is complete! You now have lifetime access to these features.
                   </p>
                 </div>
               )}
@@ -147,7 +151,9 @@ const SuccessPage: React.FC = () => {
 
             <div className="text-sm text-gray-500">
               <p>A confirmation email has been sent to your registered email address.</p>
-              <p>You can view your purchase history in your dashboard.</p>
+              {stripeConfigured && (
+                <p>You can view your purchase history in your dashboard.</p>
+              )}
             </div>
           </motion.div>
 

@@ -1,8 +1,9 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, LayoutDashboard, User, HelpCircle, Mic, MicOff, Globe, Bell, LogIn, Zap, Menu, CreditCard, Users, Phone } from 'lucide-react';
+import { Home, LayoutDashboard, User, HelpCircle, Mic, MicOff, Globe, Bell, LogIn, Zap, Menu, CreditCard, Users, Phone, Crown } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { useAuth } from '../../hooks/useAuth';
+import { useStripe } from '../../hooks/useStripe';
 import { useTranslation } from '../../utils/translations';
 import { motion } from 'framer-motion';
 
@@ -13,6 +14,7 @@ interface NavbarProps {
 const Navbar: React.FC<NavbarProps> = ({ onAuthClick }) => {
   const location = useLocation();
   const { user, signOut } = useAuth();
+  const { subscription, stripeConfigured } = useStripe();
   const { 
     currentLanguage, 
     setCurrentLanguage,
@@ -56,6 +58,22 @@ const Navbar: React.FC<NavbarProps> = ({ onAuthClick }) => {
 
   const handleSignOut = async () => {
     await signOut();
+  };
+
+  // Get subscription status for display
+  const getSubscriptionDisplay = () => {
+    if (!stripeConfigured || !subscription) return null;
+    
+    if (subscription.subscription_status === 'active') {
+      return (
+        <div className="flex items-center space-x-1 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
+          <Crown size={12} />
+          <span>Pro</span>
+        </div>
+      );
+    }
+    
+    return null;
   };
 
   return (
@@ -167,17 +185,25 @@ const Navbar: React.FC<NavbarProps> = ({ onAuthClick }) => {
 
                 {/* User Menu */}
                 <div className="relative group">
-                  <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-gray-200 cursor-pointer">
-                    <img
-                      src={currentUser?.avatar || 'https://images.pexels.com/photos/771742/pexels-photo-771742.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop'}
-                      alt={currentUser?.name || 'User'}
-                      className="w-full h-full object-cover"
-                    />
+                  <div className="flex items-center space-x-2 cursor-pointer">
+                    <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-gray-200">
+                      <img
+                        src={currentUser?.avatar || 'https://images.pexels.com/photos/771742/pexels-photo-771742.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop'}
+                        alt={currentUser?.name || 'User'}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    {getSubscriptionDisplay()}
                   </div>
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                     <div className="px-4 py-2 border-b border-gray-200">
                       <p className="font-medium text-gray-900">{currentUser?.name}</p>
                       <p className="text-sm text-gray-500">{user.email}</p>
+                      {getSubscriptionDisplay() && (
+                        <div className="mt-1">
+                          {getSubscriptionDisplay()}
+                        </div>
+                      )}
                     </div>
                     <Link
                       to="/profile"
@@ -191,6 +217,14 @@ const Navbar: React.FC<NavbarProps> = ({ onAuthClick }) => {
                     >
                       Dashboard
                     </Link>
+                    {stripeConfigured && (
+                      <Link
+                        to="/plans"
+                        className="block px-4 py-2 text-gray-700 hover:bg-gray-50"
+                      >
+                        Upgrade Plan
+                      </Link>
+                    )}
                     <button
                       onClick={handleSignOut}
                       className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-b-lg"

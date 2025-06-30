@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, Crown, Zap } from 'lucide-react';
+import { Check, Crown, Zap, Package } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { StripeProduct } from '../../stripe-config';
 import { useStripe } from '../../hooks/useStripe';
@@ -12,12 +12,17 @@ interface ProductCardProps {
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ product, className = '' }) => {
-  const { purchaseProduct, loading } = useStripe();
+  const { purchaseProduct, loading, stripeConfigured } = useStripe();
   const { user } = useAuth();
 
   const handlePurchase = async () => {
     if (!user) {
       toast.error('Please sign in to purchase');
+      return;
+    }
+
+    if (!stripeConfigured) {
+      toast.error('Payment system is not configured. Please contact support.');
       return;
     }
 
@@ -40,7 +45,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, className = '' }) =>
     if (product.popular) {
       return <Crown className="text-yellow-500" size={24} />;
     }
-    return <Zap className="text-blue-500" size={24} />;
+    if (product.mode === 'subscription') {
+      return <Zap className="text-blue-500" size={24} />;
+    }
+    return <Package className="text-purple-500" size={24} />;
   };
 
   return (
@@ -98,7 +106,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, className = '' }) =>
 
         <button
           onClick={handlePurchase}
-          disabled={loading}
+          disabled={loading || !stripeConfigured}
           className={`w-full py-3 px-6 rounded-xl font-semibold transition-all duration-200 ${
             product.popular
               ? 'bg-gradient-to-r from-yellow-400 to-orange-400 text-white hover:from-yellow-500 hover:to-orange-500'
@@ -110,6 +118,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, className = '' }) =>
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
               <span>Processing...</span>
             </div>
+          ) : !stripeConfigured ? (
+            'Payment Unavailable'
           ) : (
             <>
               {product.mode === 'subscription' ? 'Subscribe Now' : 'Purchase Now'}
@@ -120,6 +130,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, className = '' }) =>
         {product.mode === 'subscription' && (
           <p className="text-xs text-gray-500 text-center mt-3">
             Cancel anytime. No long-term commitments.
+          </p>
+        )}
+
+        {!stripeConfigured && (
+          <p className="text-xs text-gray-500 text-center mt-3">
+            Payment system configuration required
           </p>
         )}
       </div>
