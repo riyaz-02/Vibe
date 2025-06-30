@@ -13,6 +13,85 @@ export interface StripeProduct {
 
 export const stripeProducts: StripeProduct[] = [
   {
+    id: 'prod_SaoWpLi2qxp6aq',
+    priceId: 'price_1RfctaG3rwHz1Z4EDF3q4K0l',
+    name: 'P7',
+    description: 'Ultimate enterprise subscription with premium features and unlimited access',
+    price: 10000.00,
+    currency: 'inr',
+    mode: 'subscription',
+    popular: true,
+    features: [
+      'Unlimited loan requests and funding',
+      'Premium AI risk assessment',
+      'Priority customer support 24/7',
+      'Advanced analytics and reporting',
+      'Custom lending terms and rates',
+      'Dedicated relationship manager',
+      'White-label platform access',
+      'API access and integrations',
+      'Advanced security features',
+      'Custom compliance reporting'
+    ]
+  },
+  {
+    id: 'prod_SaoWmvhnHdfj7x',
+    priceId: 'price_1RfctIG3rwHz1Z4EfHrWEotz',
+    name: 'P6',
+    description: 'Premium one-time package with advanced lending capabilities',
+    price: 10000.00,
+    currency: 'inr',
+    mode: 'payment',
+    features: [
+      'Lifetime access to premium features',
+      'Advanced loan matching algorithms',
+      'Priority verification process',
+      'Enhanced security protocols',
+      'Advanced analytics dashboard',
+      'Custom interest rate settings',
+      'Bulk lending operations',
+      'Premium customer support'
+    ]
+  },
+  {
+    id: 'prod_SaoVHTDpTKRkV7',
+    priceId: 'price_1RfcsyG3rwHz1Z4EgMLfYIe7',
+    name: 'P5',
+    description: 'Professional enterprise package for serious lenders',
+    price: 10000.00,
+    currency: 'usd',
+    mode: 'payment',
+    features: [
+      'Enterprise-grade lending tools',
+      'Advanced risk assessment',
+      'Professional reporting suite',
+      'Custom lending workflows',
+      'Priority customer support',
+      'Advanced user management',
+      'Custom branding options',
+      'API access for integrations'
+    ]
+  },
+  {
+    id: 'prod_SaoVHeD2WSwF19',
+    priceId: 'price_1RfcsiG3rwHz1Z4EUjjDYcNf',
+    name: 'P4',
+    description: 'Professional subscription for advanced lending features',
+    price: 10000.00,
+    currency: 'usd',
+    mode: 'subscription',
+    features: [
+      'Professional lending tools',
+      'Advanced AI verification',
+      'Priority support and onboarding',
+      'Custom lending parameters',
+      'Advanced reporting and analytics',
+      'Multi-currency support',
+      'Enhanced security features',
+      'Professional dashboard'
+    ]
+  },
+  {
     id: 'prod_SanxmQQ4qkYU78',
     priceId: 'price_1RfcLDG3rwHz1Z4E5pLZtbAj',
     name: 'P3',
@@ -21,13 +100,13 @@ export const stripeProducts: StripeProduct[] = [
     currency: 'usd',
     mode: 'payment',
     features: [
-      'Unlimited loan requests and funding',
-      'Advanced AI risk assessment',
+      'Advanced loan matching',
       'Priority customer support',
-      'Custom lending terms',
-      'Advanced analytics dashboard',
+      'Enhanced analytics',
+      'Custom loan terms',
       'Dedicated account manager',
-      'White-label options',
+      'Advanced risk assessment',
+      'Professional reporting',
       'API access for integrations'
     ]
   },
@@ -57,7 +136,6 @@ export const stripeProducts: StripeProduct[] = [
     price: 10.00,
     currency: 'usd',
     mode: 'subscription',
-    popular: true,
     features: [
       'Unlimited loan requests',
       'Basic AI verification',
@@ -85,4 +163,21 @@ export const getPaymentProducts = (): StripeProduct[] => {
 
 export const getSubscriptionProducts = (): StripeProduct[] => {
   return stripeProducts.filter(product => product.mode === 'subscription');
+};
+
+// Helper function to format currency based on product currency
+export const formatProductPrice = (product: StripeProduct): string => {
+  if (product.currency === 'inr') {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 0
+    }).format(product.price);
+  } else {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0
+    }).format(product.price);
+  }
 };

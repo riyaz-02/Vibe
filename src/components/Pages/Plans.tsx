@@ -1,24 +1,47 @@
 import React, { useState } from 'react';
-import { Check, Star, Zap, Shield, TrendingUp, Users, DollarSign, Calculator, Sliders as Slider, ArrowRight, Award, Target, BarChart3, PieChart, Clock, CreditCard, IndianRupee } from 'lucide-react';
+import { Check, Star, Zap, Shield, TrendingUp, Users, DollarSign, Calculator, Sliders as Slider, ArrowRight, Award, Target, BarChart3, PieChart, Clock, CreditCard, IndianRupee, Crown, Package } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { stripeProducts } from '../../stripe-config';
+import { stripeProducts, getPaymentProducts, getSubscriptionProducts } from '../../stripe-config';
 import ProductCard from '../Stripe/ProductCard';
 
 const Plans: React.FC = () => {
   const [lendingAmount, setLendingAmount] = useState(100000);
   const [interestRate, setInterestRate] = useState(18);
   const [tenure, setTenure] = useState(24);
+  const [selectedCategory, setSelectedCategory] = useState('all');
 
   // Calculate returns
   const monthlyRepayment = (lendingAmount * (interestRate / 100) / 12) + (lendingAmount / tenure);
   const totalReturns = (lendingAmount * (interestRate / 100) * (tenure / 12));
   const totalPayment = lendingAmount + totalReturns;
 
+  const categories = [
+    { id: 'all', name: 'All Plans', icon: Package },
+    { id: 'subscription', name: 'Subscriptions', icon: Zap },
+    { id: 'payment', name: 'One-time', icon: CreditCard },
+    { id: 'premium', name: 'Premium', icon: Crown }
+  ];
+
+  const getFilteredProducts = () => {
+    switch (selectedCategory) {
+      case 'subscription':
+        return getSubscriptionProducts();
+      case 'payment':
+        return getPaymentProducts();
+      case 'premium':
+        return stripeProducts.filter(p => p.name.startsWith('P') && ['P5', 'P6', 'P7'].includes(p.name));
+      default:
+        return stripeProducts;
+    }
+  };
+
+  const filteredProducts = getFilteredProducts();
+
   const earnings = [
     {
       icon: DollarSign,
       title: 'Earnings',
-      description: 'Select from available loans. Easily allocate your funds across multiple borrowers to spread risk. IndiaP2P\'s borrower sourcing focused on retail loans generating returns up to 18% p.a. for you.',
+      description: 'Select from available loans. Easily allocate your funds across multiple borrowers to spread risk. Vibe\'s borrower sourcing focused on retail loans generating returns up to 18% p.a. for you.',
       color: 'from-green-500 to-emerald-500'
     },
     {
@@ -110,23 +133,8 @@ const Plans: React.FC = () => {
     {
       name: 'Manish Jasyal',
       role: 'Product Manager',
-      quote: 'I am a conservative investor and IndiaP2P worked for me because of being RBI regulated and easy to understand.',
+      quote: 'I am a conservative investor and Vibe worked for me because of being RBI regulated and easy to understand.',
       tags: ['risk free', 'non-volatile']
-    }
-  ];
-
-  const newsItems = [
-    {
-      title: 'Meet the winner of Women World Banking\'s Fintech Innovation Challenge',
-      image: 'https://images.pexels.com/photos/3184360/pexels-photo-3184360.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop'
-    },
-    {
-      title: 'How an Entrepreneur is Closing the Loan Gap for Rural Women',
-      image: 'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop'
-    },
-    {
-      title: 'Women outpaced men in credit uptake by 17.8% in CY23: Report',
-      image: 'https://images.pexels.com/photos/3184339/pexels-photo-3184339.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop'
     }
   ];
 
@@ -186,6 +194,31 @@ const Plans: React.FC = () => {
         </div>
       </section>
 
+      {/* Category Filter */}
+      <section className="py-8 bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-wrap justify-center gap-4">
+            {categories.map((category) => {
+              const Icon = category.icon;
+              return (
+                <button
+                  key={category.id}
+                  onClick={() => setSelectedCategory(category.id)}
+                  className={`flex items-center space-x-2 px-6 py-3 rounded-xl font-semibold transition-all ${
+                    selectedCategory === category.id
+                      ? 'bg-blue-500 text-white shadow-lg'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  <Icon size={20} />
+                  <span>{category.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
       {/* Pricing Plans */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -196,15 +229,18 @@ const Plans: React.FC = () => {
             viewport={{ once: true }}
           >
             <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-6">
-              Flexible Plans for Every Lender
+              {selectedCategory === 'all' ? 'All Available Plans' : 
+               selectedCategory === 'subscription' ? 'Subscription Plans' :
+               selectedCategory === 'payment' ? 'One-time Purchase Plans' :
+               'Premium Plans'}
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               Choose the plan that best fits your lending goals and unlock powerful features
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {stripeProducts.map((product, index) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+            {filteredProducts.map((product, index) => (
               <motion.div
                 key={product.id}
                 initial={{ opacity: 0, y: 30 }}
@@ -216,6 +252,14 @@ const Plans: React.FC = () => {
               </motion.div>
             ))}
           </div>
+
+          {filteredProducts.length === 0 && (
+            <div className="text-center py-12">
+              <Package size={48} className="text-gray-300 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">No plans found</h3>
+              <p className="text-gray-600">Try selecting a different category to see available plans.</p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -378,7 +422,7 @@ const Plans: React.FC = () => {
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Strong earnings potential with regular payouts</h2>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
             {benefits.map((benefit, index) => (
               <motion.div
                 key={index}
