@@ -159,16 +159,27 @@ export function useStripe() {
     }
 
     try {
-      // This would typically call a Supabase function to cancel the subscription
-      // For now, we'll just show that the functionality exists
-      console.log('Canceling subscription:', subscription.subscription_id);
+      const { data: { session } } = await supabase.auth.getSession();
       
-      // You would implement this by calling a Supabase function that uses the Stripe API
-      // const response = await supabase.functions.invoke('cancel-subscription', {
-      //   body: { subscription_id: subscription.subscription_id }
-      // });
-      
-      throw new Error('Subscription cancellation not implemented yet');
+      if (!session) {
+        throw new Error('No active session');
+      }
+
+      const response = await supabase.functions.invoke('cancel-subscription', {
+        body: { 
+          subscription_id: subscription.subscription_id 
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || 'Failed to cancel subscription');
+      }
+
+      await fetchUserSubscription();
+      return response.data;
     } catch (error) {
       console.error('Error canceling subscription:', error);
       throw error;
@@ -193,6 +204,5 @@ export function useStripe() {
     fetchUserOrders,
     cancelSubscription,
     purchaseProduct,
-    stripeConfigured: !!stripePromise,
   };
 }

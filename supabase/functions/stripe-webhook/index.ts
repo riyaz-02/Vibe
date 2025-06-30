@@ -44,6 +44,8 @@ Deno.serve(async (req) => {
       return new Response(`Webhook signature verification failed: ${error.message}`, { status: 400 });
     }
 
+    console.log(`Processing webhook event: ${event.type}`);
+
     EdgeRuntime.waitUntil(handleEvent(event));
 
     return Response.json({ received: true });
@@ -60,12 +62,17 @@ async function handleEvent(event: Stripe.Event) {
     return;
   }
 
+  console.log(`Event type: ${event.type}`);
+  console.log(`Event data: ${JSON.stringify(stripeData)}`);
+
   if (!('customer' in stripeData)) {
+    console.log('No customer in event data, skipping');
     return;
   }
 
   // for one time payments, we only listen for the checkout.session.completed event
   if (event.type === 'payment_intent.succeeded' && event.data.object.invoice === null) {
+    console.log('Payment intent succeeded without invoice, skipping');
     return;
   }
 
@@ -84,41 +91,43 @@ async function handleEvent(event: Stripe.Event) {
       console.info(`Processing ${isSubscription ? 'subscription' : 'one-time payment'} checkout session`);
     }
 
-    const { mode, payment_status } = stripeData as Stripe.Checkout.Session;
-
     if (isSubscription) {
       console.info(`Starting subscription sync for customer: ${customerId}`);
       await syncCustomerFromStripe(customerId);
-    } else if (mode === 'payment' && payment_status === 'paid') {
-      try {
-        // Extract the necessary information from the session
-        const {
-          id: checkout_session_id,
-          payment_intent,
-          amount_subtotal,
-          amount_total,
-          currency,
-        } = stripeData as Stripe.Checkout.Session;
+    } else if (event.type === 'checkout.session.completed') {
+      const { mode, payment_status } = stripeData as Stripe.Checkout.Session;
+      
+      if (mode === 'payment' && payment_status === 'paid') {
+        try {
+          // Extract the necessary information from the session
+          const {
+            id: checkout_session_id,
+            payment_intent,
+            amount_subtotal,
+            amount_total,
+            currency,
+          } = stripeData as Stripe.Checkout.Session;
 
-        // Insert the order into the stripe_orders table
-        const { error: orderError } = await supabase.from('stripe_orders').insert({
-          checkout_session_id,
-          payment_intent_id: payment_intent,
-          customer_id: customerId,
-          amount_subtotal,
-          amount_total,
-          currency,
-          payment_status,
-          status: 'completed', // assuming we want to mark it as completed since payment is successful
-        });
+          // Insert the order into the stripe_orders table
+          const { error: orderError } = await supabase.from('stripe_orders').insert({
+            checkout_session_id,
+            payment_intent_id: payment_intent,
+            customer_id: customerId,
+            amount_subtotal,
+            amount_total,
+            currency,
+            payment_status,
+            status: 'completed', // assuming we want to mark it as completed since payment is successful
+          });
 
-        if (orderError) {
-          console.error('Error inserting order:', orderError);
-          return;
+          if (orderError) {
+            console.error('Error inserting order:', orderError);
+            return;
+          }
+          console.info(`Successfully processed one-time payment for session: ${checkout_session_id}`);
+        } catch (error) {
+          console.error('Error processing one-time payment:', error);
         }
-        console.info(`Successfully processed one-time payment for session: ${checkout_session_id}`);
-      } catch (error) {
-        console.error('Error processing one-time payment:', error);
       }
     }
   }
@@ -127,6 +136,8 @@ async function handleEvent(event: Stripe.Event) {
 // based on the excellent https://github.com/t3dotgg/stripe-recommendations
 async function syncCustomerFromStripe(customerId: string) {
   try {
+    console.log(`Syncing customer ${customerId} from Stripe`);
+    
     // fetch latest subscription data from Stripe
     const subscriptions = await stripe.subscriptions.list({
       customer: customerId,
@@ -135,7 +146,9 @@ async function syncCustomerFromStripe(customerId: string) {
       expand: ['data.default_payment_method'],
     });
 
-    // TODO verify if needed
+    console.log(`Found ${subscriptions.data.length} subscriptions for customer ${customerId}`);
+
+    // If no subscriptions found, update status to not_started
     if (subscriptions.data.length === 0) {
       console.info(`No active subscriptions found for customer: ${customerId}`);
       const { error: noSubError } = await supabase.from('stripe_subscriptions').upsert(
@@ -152,26 +165,46 @@ async function syncCustomerFromStripe(customerId: string) {
         console.error('Error updating subscription status:', noSubError);
         throw new Error('Failed to update subscription status in database');
       }
+      
+      return;
     }
 
     // assumes that a customer can only have a single subscription
     const subscription = subscriptions.data[0];
+    console.log(`Processing subscription ${subscription.id} with status ${subscription.status}`);
+
+    // Get the price ID from the subscription
+    const priceId = subscription.items.data[0]?.price?.id;
+    if (!priceId) {
+      console.error(`No price ID found for subscription ${subscription.id}`);
+      return;
+    }
+
+    console.log(`Price ID: ${priceId}`);
+    console.log(`Current period: ${subscription.current_period_start} to ${subscription.current_period_end}`);
+    console.log(`Cancel at period end: ${subscription.cancel_at_period_end}`);
+
+    // Get payment method details
+    let paymentMethodBrand = null;
+    let paymentMethodLast4 = null;
+
+    if (subscription.default_payment_method && typeof subscription.default_payment_method !== 'string') {
+      paymentMethodBrand = subscription.default_payment_method.card?.brand ?? null;
+      paymentMethodLast4 = subscription.default_payment_method.card?.last4 ?? null;
+      console.log(`Payment method: ${paymentMethodBrand} ending in ${paymentMethodLast4}`);
+    }
 
     // store subscription state
     const { error: subError } = await supabase.from('stripe_subscriptions').upsert(
       {
         customer_id: customerId,
         subscription_id: subscription.id,
-        price_id: subscription.items.data[0].price.id,
+        price_id: priceId,
         current_period_start: subscription.current_period_start,
         current_period_end: subscription.current_period_end,
         cancel_at_period_end: subscription.cancel_at_period_end,
-        ...(subscription.default_payment_method && typeof subscription.default_payment_method !== 'string'
-          ? {
-              payment_method_brand: subscription.default_payment_method.card?.brand ?? null,
-              payment_method_last4: subscription.default_payment_method.card?.last4 ?? null,
-            }
-          : {}),
+        payment_method_brand: paymentMethodBrand,
+        payment_method_last4: paymentMethodLast4,
         status: subscription.status,
       },
       {

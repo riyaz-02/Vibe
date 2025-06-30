@@ -36,7 +36,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, className = '' }) =>
     if (product.mode === 'subscription') {
       return <Zap className="text-blue-500" size={24} />;
     }
-    if (product.name.startsWith('P7') || product.name.startsWith('P6') || product.name.startsWith('P5')) {
+    if (product.name === 'Premium') {
       return <Star className="text-purple-500" size={24} />;
     }
     return <Package className="text-green-500" size={24} />;

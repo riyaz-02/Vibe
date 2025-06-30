@@ -9,20 +9,18 @@ interface OrderHistoryProps {
 }
 
 const OrderHistory: React.FC<OrderHistoryProps> = ({ className = '' }) => {
-  const { orders, fetchUserOrders, stripeConfigured } = useStripe();
+  const { orders, fetchUserOrders } = useStripe();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadOrders = async () => {
-      if (stripeConfigured) {
-        setLoading(true);
-        await fetchUserOrders();
-      }
+      setLoading(true);
+      await fetchUserOrders();
       setLoading(false);
     };
 
     loadOrders();
-  }, [stripeConfigured]);
+  }, []);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -70,11 +68,6 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ className = '' }) => {
   const formatStatus = (status: string) => {
     return status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
-
-  // Don't show anything if Stripe is not configured
-  if (!stripeConfigured) {
-    return null;
-  }
 
   if (loading) {
     return (
