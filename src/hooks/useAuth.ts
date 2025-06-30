@@ -13,6 +13,54 @@ export function useAuth() {
   const currentUserIdRef = useRef<string | null>(null)
   const profileFetchedRef = useRef(false)
 
+  const createUserProfile = useCallback(async (authUser: User) => {
+    if (!supabase) return null;
+
+    try {
+      console.log('📝 Creating user profile for:', authUser.id);
+      
+      const profileData = {
+        id: authUser.id,
+        name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User',
+        email: authUser.email || '',
+        phone: authUser.user_metadata?.phone || null,
+        avatar_url: authUser.user_metadata?.avatar_url || null,
+        is_verified: false,
+        language: 'en',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .insert(profileData)
+        .select()
+        .single();
+
+      if (error) {
+        // If profile already exists (race condition), fetch it
+        if (error.code === '23505') {
+          console.log('📋 Profile already exists, fetching...');
+          const { data: existingProfile, error: fetchError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', authUser.id)
+            .single();
+          
+          if (fetchError) throw fetchError;
+          return existingProfile;
+        }
+        throw error;
+      }
+
+      console.log('✅ Profile created successfully:', profile.name);
+      return profile;
+    } catch (error: any) {
+      console.error('❌ Error creating profile:', error.message);
+      throw error;
+    }
+  }, []);
+
   const fetchUserProfile = useCallback(async (userId: string) => {
     // Prevent multiple fetches for the same user
     if (currentUserIdRef.current === userId && profileFetchedRef.current) {
@@ -29,6 +77,7 @@ export function useAuth() {
       currentUserIdRef.current = userId
       profileFetchedRef.current = true
 
+      // Use maybeSingle() to handle cases where profile doesn't exist
       const { data: profile, error } = await supabase
         .from('profiles')
         .select(`
@@ -38,27 +87,36 @@ export function useAuth() {
           badges(*)
         `)
         .eq('id', userId)
-        .single()
+        .maybeSingle()
 
       if (error) {
-        if (error.code === 'PGRST116') {
-          console.log('📝 Profile not found - user can create one later')
-        } else {
-          console.error('❌ Profile fetch error:', error.message)
-        }
+        console.error('❌ Profile fetch error:', error.message)
         return
       }
 
-      if (profile) {
-        console.log('✅ Profile loaded:', profile.name)
+      // If no profile exists, create one
+      if (!profile) {
+        console.log('📝 No profile found, creating new profile...');
+        
+        // Get the current user to create profile
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (!authUser) {
+          console.error('❌ No authenticated user found');
+          return;
+        }
+
+        const newProfile = await createUserProfile(authUser);
+        if (!newProfile) return;
+
+        // Set the new profile data
         setCurrentUser({
-          id: profile.id,
-          name: profile.name,
-          email: profile.email,
-          avatar: profile.avatar_url || 'https://images.pexels.com/photos/771742/pexels-photo-771742.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-          isVerified: profile.is_verified || false,
-          badges: profile.badges || [],
-          stats: profile.user_stats || {
+          id: newProfile.id,
+          name: newProfile.name,
+          email: newProfile.email,
+          avatar: newProfile.avatar_url || 'https://images.pexels.com/photos/771742/pexels-photo-771742.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+          isVerified: newProfile.is_verified || false,
+          badges: [],
+          stats: {
             totalLoansGiven: 0,
             totalLoansTaken: 0,
             successfulRepayments: 0,
@@ -66,20 +124,128 @@ export function useAuth() {
             totalAmountLent: 0,
             totalAmountBorrowed: 0
           },
-          createdAt: new Date(profile.created_at),
-          language: profile.language || 'en',
-          accessibilitySettings: profile.accessibility_settings || {
+          createdAt: new Date(newProfile.created_at),
+          language: newProfile.language || 'en',
+          accessibilitySettings: {
             voiceNavigation: false,
             highContrast: false,
             screenReader: false,
             fontSize: 'medium'
           }
-        })
+        });
+        return;
       }
+
+      // Fetch loan statistics
+      const { data: loanFundings } = await supabase
+        .from('loan_fundings')
+        .select('amount')
+        .eq('lender_id', userId);
+
+      const { data: loanRequests } = await supabase
+        .from('loan_requests')
+        .select('amount, status')
+        .eq('borrower_id', userId);
+
+      // Calculate stats
+      const totalAmountLent = loanFundings?.reduce((sum, funding) => sum + Number(funding.amount), 0) || 0;
+      const totalAmountBorrowed = loanRequests?.reduce((sum, request) => sum + Number(request.amount), 0) || 0;
+      const totalLoansGiven = loanFundings?.length || 0;
+      const totalLoansTaken = loanRequests?.length || 0;
+      const successfulRepayments = loanRequests?.filter(req => req.status === 'completed').length || 0;
+
+      // Check and award badges (with error handling)
+      try {
+        await checkAndAwardBadges(userId, {
+          totalLoansGiven,
+          totalLoansTaken,
+          successfulRepayments,
+          isVerified: profile?.is_verified || false
+        });
+      } catch (badgeError) {
+        console.error('Error awarding badges:', badgeError);
+        // Continue with profile loading even if badge awarding fails
+      }
+
+      const formattedProfile = {
+        id: profile.id,
+        name: profile.name,
+        email: profile.email,
+        phone: profile.phone,
+        avatar: profile.avatar_url || 'https://images.pexels.com/photos/771742/pexels-photo-771742.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
+        isVerified: profile.is_verified || false,
+        badges: profile.badges || [],
+        stats: {
+          totalLoansGiven,
+          totalLoansTaken,
+          successfulRepayments,
+          averageRating: profile.user_stats?.average_rating || 0,
+          totalAmountLent,
+          totalAmountBorrowed
+        },
+        createdAt: new Date(profile.created_at),
+        language: profile.language || 'en',
+        accessibilitySettings: profile.accessibility_settings || {
+          voiceNavigation: false,
+          highContrast: false,
+          screenReader: false,
+          fontSize: 'medium'
+        }
+      };
+
+      setCurrentUser(formattedProfile);
+      console.log('✅ Profile loaded:', profile.name);
+
     } catch (error: any) {
       console.error('❌ Error fetching user profile:', error.message)
     }
-  }, [setCurrentUser])
+  }, [setCurrentUser, createUserProfile])
+
+  const checkAndAwardBadges = async (userId: string, stats: any) => {
+    try {
+      if (!supabase) return;
+
+      // First, fetch existing badges for the user
+      const { data: existingBadges, error: fetchError } = await supabase
+        .from('badges')
+        .select('name')
+        .eq('user_id', userId);
+
+      if (fetchError) {
+        console.error('Error fetching existing badges:', fetchError);
+        return;
+      }
+
+      const existingBadgeNames = new Set(existingBadges?.map(badge => badge.name) || []);
+
+      const badgesToAward = [];
+
+      // Check for verified member badge
+      if (stats.isVerified && !existingBadgeNames.has('Verified Member')) {
+        badgesToAward.push({
+          user_id: userId,
+          name: 'Verified Member',
+          description: 'Completed identity verification',
+          icon: '✅',
+          category: 'community'
+        });
+      }
+
+      // Only insert badges that don't already exist
+      if (badgesToAward.length > 0) {
+        const { error } = await supabase
+          .from('badges')
+          .insert(badgesToAward);
+
+        if (error) {
+          console.error('Error inserting badges:', error);
+        }
+      }
+    } catch (error) {
+      console.error('Error in checkAndAwardBadges:', error);
+      // Don't throw error to prevent breaking the profile loading
+    }
+  };
 
   useEffect(() => {
     let mounted = true
