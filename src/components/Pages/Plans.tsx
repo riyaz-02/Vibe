@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Check, Star, Zap, Shield, TrendingUp, Users, DollarSign, Calculator, Sliders as Slider, ArrowRight, Award, Target, BarChart3, PieChart, Clock, CreditCard, IndianRupee } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { stripeProducts } from '../../stripe-config';
+import ProductCard from '../Stripe/ProductCard';
 
 const Plans: React.FC = () => {
   const [lendingAmount, setLendingAmount] = useState(100000);
@@ -11,22 +13,6 @@ const Plans: React.FC = () => {
   const monthlyRepayment = (lendingAmount * (interestRate / 100) / 12) + (lendingAmount / tenure);
   const totalReturns = (lendingAmount * (interestRate / 100) * (tenure / 12));
   const totalPayment = lendingAmount + totalReturns;
-
-  const plans = [
-    {
-      name: 'Monthly Income Plan',
-      subtitle: 'Earn EMIs. Reinvest again or top-up anytime!',
-      returns: 'Earn upto 18% A.P.R.',
-      features: [
-        'Monthly Payouts',
-        'Easy Diversification', 
-        'Best In Class Performance'
-      ],
-      popular: true,
-      color: 'from-blue-500 to-teal-500',
-      icon: TrendingUp
-    }
-  ];
 
   const earnings = [
     {
@@ -146,7 +132,7 @@ const Plans: React.FC = () => {
 
   const faqs = [
     {
-      question: 'What is IndiaP2P\'s Monthly Income Plan Plus?',
+      question: 'What is Vibe\'s Monthly Income Plan Plus?',
       answer: 'Our Monthly Income Plan allows you to earn regular monthly returns from peer-to-peer lending with the flexibility to reinvest or withdraw your earnings.'
     },
     {
@@ -178,28 +164,11 @@ const Plans: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
           >
             <h1 className="text-4xl lg:text-6xl font-bold mb-6">
-              Monthly Income <span className="bg-gradient-to-r from-blue-400 to-teal-400 bg-clip-text text-transparent">Plan</span>
+              Choose Your <span className="bg-gradient-to-r from-blue-400 to-teal-400 bg-clip-text text-transparent">Plan</span>
             </h1>
             <p className="text-xl lg:text-2xl text-blue-100 mb-8 max-w-4xl mx-auto">
-              Earn EMIs. Reinvest again or top-up anytime!
+              Unlock premium features and maximize your lending potential with our flexible plans
             </p>
-            <div className="text-3xl font-bold text-yellow-400 mb-4">
-              Earn upto 18% A.P.R.
-            </div>
-            <div className="flex flex-wrap justify-center gap-4 mb-8">
-              {['Monthly Payouts', 'Easy Diversification', 'Best In Class Performance'].map((feature, index) => (
-                <div key={index} className="bg-white/10 backdrop-blur-lg px-4 py-2 rounded-full text-sm">
-                  {feature}
-                </div>
-              ))}
-            </div>
-            <motion.button
-              className="bg-gradient-to-r from-blue-500 to-teal-500 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:from-blue-600 hover:to-teal-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              Start Lending
-            </motion.button>
           </motion.div>
 
           {/* RBI Verified Badge */}
@@ -217,9 +186,56 @@ const Plans: React.FC = () => {
         </div>
       </section>
 
-      {/* How Users Can Earn Section */}
+      {/* Pricing Plans */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            className="text-center mb-16"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-6">
+              Flexible Plans for Every Lender
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Choose the plan that best fits your lending goals and unlock powerful features
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {stripeProducts.map((product, index) => (
+              <motion.div
+                key={product.id}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+              >
+                <ProductCard product={product} />
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* How Users Can Earn Section */}
+      <section className="py-20 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            className="text-center mb-16"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-6">
+              How You Can Earn
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Multiple ways to generate returns through our platform
+            </p>
+          </motion.div>
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {earnings.map((item, index) => (
               <motion.div
@@ -242,7 +258,7 @@ const Plans: React.FC = () => {
       </section>
 
       {/* Profit Calculator */}
-      <section className="py-20 bg-gradient-to-br from-gray-50 to-blue-50">
+      <section className="py-20 bg-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             className="text-center mb-12"
@@ -351,7 +367,7 @@ const Plans: React.FC = () => {
       </section>
 
       {/* Benefits Section */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             className="text-center mb-12"
@@ -405,7 +421,7 @@ const Plans: React.FC = () => {
       </section>
 
       {/* How It Works Section */}
-      <section className="py-20 bg-gradient-to-br from-gray-50 to-blue-50">
+      <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             className="text-center mb-16"
@@ -446,77 +462,11 @@ const Plans: React.FC = () => {
               </motion.div>
             ))}
           </div>
-
-          <motion.div
-            className="text-center mt-12"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.5 }}
-          >
-            <button className="bg-gradient-to-r from-blue-500 to-teal-500 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:from-blue-600 hover:to-teal-600 transition-all duration-200 shadow-lg hover:shadow-xl">
-              Start Lending
-            </button>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Borrower Verification Section */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            className="text-center mb-16"
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-          >
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              How are borrowers/loans vetted and verified?
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              IndiaP2P combines technology and field presence to screen, verify and diligence borrowers.
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            {[1, 2, 3, 4].map((item, index) => (
-              <motion.div
-                key={index}
-                className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-100"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-              >
-                <img 
-                  src={`https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=300&h=200&fit=crop`} 
-                  alt="Borrower" 
-                  className="w-full h-40 object-cover rounded-lg mb-4"
-                />
-                <p className="text-gray-800">
-                  Our team meets with each borrower for a comprehensive overview.
-                  A typical IndiaP2P borrower is a woman business owner with a prior track record of successful loan repayment i.e. a good credit score.
-                </p>
-              </motion.div>
-            ))}
-          </div>
-
-          <motion.div
-            className="text-center mt-12"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.5 }}
-          >
-            <p className="text-xl font-semibold text-gray-900">
-              Our risk team comes with the industry's strongest credentials and experience.
-            </p>
-          </motion.div>
         </div>
       </section>
 
       {/* Testimonials */}
-      <section className="py-20 bg-gradient-to-br from-gray-50 to-blue-50">
+      <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             className="text-center mb-16"
@@ -562,51 +512,8 @@ const Plans: React.FC = () => {
         </div>
       </section>
 
-      {/* News & Announcements */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            className="text-center mb-16"
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-          >
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              News & Announcements
-            </h2>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {newsItems.map((item, index) => (
-              <motion.article
-                key={index}
-                className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-              >
-                <img
-                  src={item.image}
-                  alt={item.title}
-                  className="w-full h-48 object-cover"
-                />
-                <div className="p-6">
-                  <h3 className="text-xl font-bold text-gray-900 mb-3">
-                    {item.title}
-                  </h3>
-                  <a href="#" className="text-blue-600 hover:text-blue-700 font-medium flex items-center">
-                    Read more <ArrowRight size={16} className="ml-1" />
-                  </a>
-                </div>
-              </motion.article>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* FAQ Section */}
-      <section className="py-20 bg-gradient-to-br from-gray-50 to-blue-50">
+      <section className="py-20 bg-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             className="text-center mb-16"

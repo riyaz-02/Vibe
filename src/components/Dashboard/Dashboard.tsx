@@ -7,6 +7,8 @@ import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
 import { motion } from 'framer-motion';
 import { supabase } from '../../lib/supabase';
+import SubscriptionStatus from '../Stripe/SubscriptionStatus';
+import OrderHistory from '../Stripe/OrderHistory';
 
 ChartJS.register(
   CategoryScale,
@@ -347,6 +349,9 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
+      {/* Subscription Status */}
+      <SubscriptionStatus className="mb-6" />
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
@@ -433,6 +438,9 @@ const Dashboard: React.FC = () => {
           </div>
         </motion.div>
       </div>
+
+      {/* Order History */}
+      <OrderHistory />
 
       {/* Recent Activity */}
       <motion.div

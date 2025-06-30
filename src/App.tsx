@@ -18,6 +18,7 @@ import Help from './components/Help/Help';
 import Plans from './components/Pages/Plans';
 import About from './components/Pages/About';
 import Contact from './components/Pages/Contact';
+import SuccessPage from './components/Pages/SuccessPage';
 import AuthModal from './components/Auth/AuthModal';
 import ChatBot from './components/Chat/ChatBot';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
@@ -125,6 +126,7 @@ function App() {
             <Route path="/plans" element={<Plans />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/success" element={<SuccessPage />} />
             <Route path="/help" element={
               <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <Help />
