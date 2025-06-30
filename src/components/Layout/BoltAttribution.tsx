@@ -19,7 +19,7 @@ const BoltAttribution: React.FC = () => {
         <img 
           src="https://i.postimg.cc/sXmWMsSY/black-circle-360x360.png" 
           alt="Bolt Icon" 
-          className="w-15 h-15 rounded-full object-cover shadow-lg hover:shadow-xl transition-shadow duration-200"
+          className="w-13 h-13 rounded-full object-cover shadow-lg hover:shadow-xl transition-shadow duration-200"
         />
       </motion.a>
     </motion.div>
