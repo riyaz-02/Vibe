@@ -7,8 +7,8 @@ import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
 import { motion } from 'framer-motion';
 import { supabase } from '../../lib/supabase';
-import SubscriptionStatus from '../Stripe/SubscriptionStatus';
-import OrderHistory from '../Stripe/OrderHistory';
+import WalletCard from '../Wallet/WalletCard';
+import BorrowedLoansCard from './BorrowedLoansCard';
 
 ChartJS.register(
   CategoryScale,
@@ -349,8 +349,8 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Subscription Status */}
-      <SubscriptionStatus className="mb-6" />
+      {/* Wallet Card */}
+      <WalletCard />
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -382,6 +382,9 @@ const Dashboard: React.FC = () => {
           color="bg-purple-500"
         />
       </div>
+
+      {/* Borrowed Loans Card */}
+      <BorrowedLoansCard />
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -438,9 +441,6 @@ const Dashboard: React.FC = () => {
           </div>
         </motion.div>
       </div>
-
-      {/* Order History */}
-      <OrderHistory />
 
       {/* Recent Activity */}
       <motion.div
