@@ -22,7 +22,7 @@ const Footer: React.FC = () => {
 
       <footer className="bg-gray-900 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
             {/* Brand Section */}
             <div className="col-span-1 md:col-span-1">
               <div className="flex items-center space-x-3 mb-4">
@@ -67,9 +67,9 @@ const Footer: React.FC = () => {
               </ul>
             </div>
 
-            {/* Contact & Legal */}
+            {/* Contact Information */}
             <div>
-              <h3 className="text-lg font-semibold mb-4">Contact & Legal</h3>
+              <h3 className="text-lg font-semibold mb-4">Contact</h3>
               <div className="space-y-3 text-gray-300 text-sm">
                 <div className="flex items-center space-x-2">
                   <Phone size={14} />
@@ -84,16 +84,17 @@ const Footer: React.FC = () => {
                   <span>Block A, Kalyani, District: Nadia, West Bengal, India, Pin 741235</span>
                 </div>
               </div>
-              
-              <div className="mt-4">
-                <h4 className="font-medium mb-2">Legal</h4>
-                <ul className="space-y-1 text-gray-300 text-xs">
-                  <li><a href="#" className="hover:text-white transition-colors">Privacy Policy</a></li>
-                  <li><a href="#" className="hover:text-white transition-colors">Terms of Service</a></li>
-                  <li><a href="#" className="hover:text-white transition-colors">Fair Practices Code</a></li>
-                  <li><a href="#" className="hover:text-white transition-colors">Grievance Policy</a></li>
-                </ul>
-              </div>
+            </div>
+
+            {/* Legal Links */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Legal</h3>
+              <ul className="space-y-2 text-gray-300 text-sm">
+                <li><a href="#" className="hover:text-white transition-colors">Privacy Policy</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Terms of Service</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Fair Practices Code</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Grievance Policy</a></li>
+              </ul>
             </div>
           </div>
 
