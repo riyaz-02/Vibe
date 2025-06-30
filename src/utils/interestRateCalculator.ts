@@ -209,7 +209,7 @@ const calculateInterestRateWithRules = (params: LoanParameters): InterestRateRes
   const timeInYears = params.tenureDays / 365;
   const interestAmount = principal * (interestRate / 100) * timeInYears;
   const platformFee = principal * (platformFeePercentage / 100);
-  const repaymentAmount = principal + interestAmount;
+  const repaymentAmount = principal + interestAmount + platformFee;
   
   // Generate explanation
   const explanation = `Based on standard rules, an interest rate of ${interestRate}% has been calculated for this ${params.purpose} loan of ₹${params.amount} for ${params.tenureDays} days. The platform fee is ${platformFeePercentage}% of the principal amount.`;
@@ -252,7 +252,7 @@ export const calculateLoanMetrics = (
   const platformFeePercentage = 4.5;
   
   // Calculate platform fee
-  const platformFee = principal * (platformFeePercentage / 100);
+  const platformFee = principal * (platformFeePercentage / 10000);
   
   return {
     principal,
@@ -261,6 +261,6 @@ export const calculateLoanMetrics = (
     dailyRepayment: Math.round(dailyRepayment * 100) / 100,
     effectiveAPR: ((totalRepayment / principal - 1) * (365 / tenureDays) * 100).toFixed(2),
     platformFeePercentage,
-    platformFee: Math.round(platformFee * 100) / 100
+    platformFee: Math.round(platformFee * 100) / 10000
   };
 };
