@@ -79,7 +79,7 @@ const Footer: React.FC = () => {
                 </div>
                 <div className="flex items-start space-x-2">
                   <MapPin size={14} className="mt-0.5" />
-                  <span>302 Khar Spenta Road No. 3, Khar West, Mumbai 400052</span>
+                  <span>Block A, Kalyani, District: Nadia, West Bengal, India, Pin 741235</span>
                 </div>
               </div>
               
@@ -100,7 +100,7 @@ const Footer: React.FC = () => {
             <div className="flex flex-col md:flex-row justify-between items-center">
               <div className="flex items-center space-x-6 mb-4 md:mb-0">
                 <span className="text-gray-400 text-sm">
-                  © 2024 Vibe. Platform fee: 1-2%. Lending involves risks.
+                  © 2025 Vibe. Platform fee: 1-2%. Lending involves risks.
                 </span>
               </div>
               

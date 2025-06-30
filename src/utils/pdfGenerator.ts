@@ -8,7 +8,7 @@ export class PDFGenerator {
     website: 'vibe.netlify.app',
     email: 'legal@vibe.com',
     phone: '+91-9876543210',
-    cin: 'U72900WB2024PTC123456',
+    cin: 'U72900WB2025PTC123456',
     rbiLicense: 'N.13-02409 dated 01/03/2021'
   };
 
@@ -412,7 +412,7 @@ export class PDFGenerator {
         <div class="footer">
           <p>This document is generated electronically and is valid without physical signature as per IT Act, 2000.</p>
           <p>For queries, contact: ${this.COMPANY_INFO.email} | ${this.COMPANY_INFO.phone}</p>
-          <p>© 2024 Vibe Technologies Private Limited. All rights reserved.</p>
+          <p>© 2025 Vibe Technologies Private Limited. All rights reserved.</p>
         </div>
       </body>
       </html>
@@ -691,7 +691,7 @@ export class PDFGenerator {
         <div class="footer">
           <p><strong>Regulatory Information:</strong> This document is issued under RBI License ${this.COMPANY_INFO.rbiLicense}. Vibe Technologies Private Limited is a registered P2P lending platform.</p>
           <p>This is a computer-generated document and is valid without physical signature as per IT Act, 2000.</p>
-          <p>© 2024 Vibe Technologies Private Limited. All rights reserved.</p>
+          <p>© 2025 Vibe Technologies Private Limited. All rights reserved.</p>
         </div>
       </body>
       </html>
@@ -1006,7 +1006,7 @@ export class PDFGenerator {
           <p><strong>Regulatory Compliance:</strong> This certificate is issued under RBI License ${this.COMPANY_INFO.rbiLicense}.</p>
           <p>This is a digitally generated certificate and is valid without physical signature as per IT Act, 2000.</p>
           <p>For verification of this certificate, contact: ${this.COMPANY_INFO.email} | ${this.COMPANY_INFO.phone}</p>
-          <p>© 2024 Vibe Technologies Private Limited. All rights reserved.</p>
+          <p>© 2025 Vibe Technologies Private Limited. All rights reserved.</p>
         </div>
       </body>
       </html>
