@@ -253,10 +253,23 @@ const Profile: React.FC = () => {
     try {
       if (!supabase) return;
 
+      // First, fetch existing badges for the user
+      const { data: existingBadges, error: fetchError } = await supabase
+        .from('badges')
+        .select('name')
+        .eq('user_id', userId);
+
+      if (fetchError) {
+        console.error('Error fetching existing badges:', fetchError);
+        return;
+      }
+
+      const existingBadgeNames = new Set(existingBadges?.map(badge => badge.name) || []);
+
       const badgesToAward = [];
 
       // Check for first loan badge
-      if (stats.totalLoansTaken >= 1) {
+      if (stats.totalLoansTaken >= 1 && !existingBadgeNames.has(badgeCriteria['first-loan'].name)) {
         badgesToAward.push({
           user_id: userId,
           name: badgeCriteria['first-loan'].name,
@@ -267,7 +280,7 @@ const Profile: React.FC = () => {
       }
 
       // Check for timely repayer badge
-      if (stats.successfulRepayments >= 3) {
+      if (stats.successfulRepayments >= 3 && !existingBadgeNames.has(badgeCriteria['timely-repayer'].name)) {
         badgesToAward.push({
           user_id: userId,
           name: badgeCriteria['timely-repayer'].name,
@@ -278,7 +291,7 @@ const Profile: React.FC = () => {
       }
 
       // Check for generous lender badge
-      if (stats.totalLoansGiven >= 10) {
+      if (stats.totalLoansGiven >= 10 && !existingBadgeNames.has(badgeCriteria['generous-lender'].name)) {
         badgesToAward.push({
           user_id: userId,
           name: badgeCriteria['generous-lender'].name,
@@ -289,7 +302,7 @@ const Profile: React.FC = () => {
       }
 
       // Check for verified member badge
-      if (stats.isVerified) {
+      if (stats.isVerified && !existingBadgeNames.has(badgeCriteria['verified-member'].name)) {
         badgesToAward.push({
           user_id: userId,
           name: badgeCriteria['verified-member'].name,
@@ -299,21 +312,14 @@ const Profile: React.FC = () => {
         });
       }
 
-      // Award badges that don't exist yet (with individual error handling)
-      for (const badge of badgesToAward) {
-        try {
-          const { error } = await supabase
-            .from('badges')
-            .insert(badge)
-            .select()
-            .single();
+      // Only insert badges that don't already exist
+      if (badgesToAward.length > 0) {
+        const { error } = await supabase
+          .from('badges')
+          .insert(badgesToAward);
 
-          if (error && error.code !== '23505') { // Ignore duplicate key errors
-            console.error('Error inserting badge:', badge.name, error);
-          }
-        } catch (individualBadgeError) {
-          console.error('Error awarding individual badge:', badge.name, individualBadgeError);
-          // Continue with other badges even if one fails
+        if (error) {
+          console.error('Error inserting badges:', error);
         }
       }
     } catch (error) {
